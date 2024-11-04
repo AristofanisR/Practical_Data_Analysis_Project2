@@ -1,0 +1,95 @@
+---
+title: | 
+ \textbf{TBD}
+
+ \vspace{1cm} 
+subtitle: 
+ "Practical Data Analysis - Project 2: Regression Analysis"
+author: "Aristofanis Rontogiannis"
+date: "2024-11-04"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+    keep_tex: true
+bibliography: References.bib
+link-citations: yes
+---
+
+# Abstract
+
+**Purpose**: 
+
+**Methods**: 
+
+**Results**: 
+
+**Conclusions**: 
+
+
+# Introduction 
+
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(echo = FALSE,
+                  message = FALSE,
+                  warning = FALSE,
+                  error = FALSE)
+
+library(summarytools)
+library(ggplot2)
+library(knitr)
+library(kableExtra)
+library(GGally)
+library(patchwork)
+library(dplyr)
+library(reshape2)
+library(tidyr)
+library(lubridate)
+library(gtsummary)
+library(gt)
+library(ggcorrplot)
+library(glmnet)
+library(bestglm)
+library(MASS)
+library(pROC)
+```
+
+
+
+```{r}
+#Read main data set 
+data<-read.csv("project2.csv") 
+
+```
+
+
+
+# Data Analysis
+
+# Results
+
+# Conclusions and Limitations
+
+# Data Privacy and Code Availability
+
+The analysis dataset was obtained from..... The replication code can be found at https://github.com/AristofanisR/Practical_Data_Analysis_Project2
+
+
+\newpage
+
+# References
+<div id="refs"></div>
+
+
+\newpage
+
+# Code Appendix
+
+```{r ref.label = knitr::all_labels(), echo = TRUE, eval = FALSE}
+```
+
+
+
+
+
