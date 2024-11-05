@@ -17,20 +17,19 @@ link-citations: yes
 
 # Abstract
 
-**Purpose**: 
+**Purpose**:
 
-**Methods**: 
+**Methods**:
 
-**Results**: 
+**Results**:
 
-**Conclusions**: 
+**Conclusions**:
 
+# Introduction
 
-# Introduction 
-
+@hitsman2023efficacy
 
 ```{r setup, include = FALSE}
-
 knitr::opts_chunk$set(echo = FALSE,
                   message = FALSE,
                   warning = FALSE,
@@ -55,14 +54,245 @@ library(MASS)
 library(pROC)
 ```
 
-
-
 ```{r}
 #Read main data set 
 data<-read.csv("project2.csv") 
 
+# Data processing
+data = data  %>%
+  # create race variable
+  mutate(race = factor(case_when(
+    NHW == 1 ~ "Non-Hispanic White",
+    Black == 1 ~ "Black",
+    Hisp == 1 ~ "Hispanic",
+    TRUE ~ "Other"  # Handle cases where none of the above conditions are met
+  ), , levels = c("Non-Hispanic White", "Black", "Hispanic", "Other"))) %>%
+  # create treatment categories
+  mutate(treatment_cat = factor(case_when(BA == 1 & Var == 0 ~ "BASC+placebo",
+                                   BA == 0 & Var == 0 ~ "ST+placebo",
+                                   BA == 1 & Var == 1 ~ "BASC+varenicline",
+                                   BA == 0 & Var == 1 ~ "ST+varenicline"))) %>%
+  # Change variables attributes to be only Numeric or Factor at the end
+  #Factor
+  mutate(
+    abst = factor(abst),
+    Var = factor(Var),
+    BA = factor(BA),
+    sex_ps = factor(sex_ps),
+    ftcd.5.mins = factor(ftcd.5.mins),
+    otherdiag = factor(otherdiag),
+    antidepmed = factor(antidepmed),
+    mde_curr = factor(mde_curr),
+    Only.Menthol = factor(Only.Menthol),
+    edu = factor(edu, levels = c(1, 2, 3, 4, 5)),
+    inc = factor(inc, levels = c(1, 2, 3, 4, 5))
+  ) %>%
+ #Numeric (except id)
+  mutate(across(
+    .cols = where(is.numeric) & !all_of("id"),
+    .fns = as.numeric
+  ))
+
 ```
 
+```{r}
+#Missingness Table
+# Calculate missing values for each variable
+missing_summary <- data %>%
+  summarise(across(everything(), ~ sum(is.na(.)), .names = "missing_{col}")) %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Number") %>%
+  mutate(Pct = (Number / nrow(data)) * 100) %>%
+  filter(Number > 0)  # Exclude variables with 0 missingness
+
+# Define a named vector with old and new names for variables
+variable_names <- c(
+  "inc" = "Income",
+  "ftcd_score" = "FTCD Score",
+  "crv_total_pqr" = "Cigarette reward at baseline",
+  "shaps_score_pqi" = "Anhedonia",
+  "NMR" = "Nicotine MEtabolism Ratio",
+  "Only.Menthol" = "Exclusive Mentholated Cigarette User",
+  "readiness" = "Baseline readiness to quit smoking"
+)
+
+# Rename variables in the summary table
+missing_summary <- missing_summary %>%
+  mutate(Variable = recode(Variable, !!!variable_names))
+
+# Load knitr for table formatting (optional)
+library(knitr)
+
+# Create and display the table
+missing_summary %>%
+  arrange(desc(Pct)) %>%
+  mutate(Pct = sprintf("%.2f%%", Pct)) %>%
+  kable(col.names = c("Variable", "Number", "Pct"), caption = "Table 1: Summary of Missing Values")
+```
+
+
+\newpage
+\begin{landscape}
+```{r}
+# Summary Table
+table1_data = data %>%
+  mutate(edu = factor(edu, levels = c(1, 2, 3, 4, 5),
+                 labels = c("    Grade school",
+                            "    Some high school",
+                            "    High school graduate or GED",
+                            "    Some college/technical school",
+                            "    College graduate")),
+    inc = factor(inc, levels = c(1, 2, 3, 4, 5),
+                 labels = c("    Less than $20,000",
+                            "    $20,000–$35,000",
+                            "    $35,001–$50,000",
+                            "    $50,001–$75,000",
+                            "    More than $75,000")),
+    race = factor(race, labels = c("    Non-Hispanic White",
+                                   "    Black",
+                                   "    Hispanic",
+                                   "    Other"))
+    )
+
+# Demographics table
+demographics_table <- table1_data %>%
+  dplyr::select(
+    treatment_cat,
+    age_ps,
+    sex_ps,
+    race,
+    inc,
+    edu
+  ) %>%
+  tbl_summary(
+    by = treatment_cat,
+    label = list(
+      age_ps = "Age (years)",
+      sex_ps = "Sex (Female)",
+      race = "Race",
+      inc = "Income",
+      edu = "Education"
+    ),
+    type = list(
+      age_ps ~ "continuous",
+      sex_ps ~ "dichotomous",
+      race ~ "categorical",
+      inc ~ "categorical",
+      edu ~ "categorical"),
+    value = list(
+      sex_ps ~ "2"),
+    statistic = list(all_continuous() ~ "{mean} ({sd})", all_categorical() ~ "{n} ({p}%)"),
+    digits = all_continuous() ~ 1,
+    missing = "no"
+  ) %>% add_overall() 
+# %>%
+# modify_column_indent(columns = label,
+# rows = !row_type %in% "label",
+# indent = 4L)
+
+# Smoking table
+smoking_table <- table1_data %>%
+  dplyr::select(
+    treatment_cat,
+    cpd_ps,
+    ftcd_score,
+    ftcd.5.mins,
+    bdi_score_w00,
+    crv_total_pq1,
+    hedonsum_n_pq1,
+    hedonsum_y_pq1,
+    Only.Menthol,
+    readiness,
+    NMR
+  ) %>%
+  tbl_summary(
+    by = treatment_cat,
+    label = list(
+      cpd_ps = "Cigarettes per day at baseline phone survey",
+      ftcd_score = "FTCD score at baseline",
+      ftcd.5.mins = "Smoking within 5 mins of waking up (Yes)",
+      bdi_score_w00 = "BDI score at baseline",
+      crv_total_pq1 = "Cigarette reward value at baseline",
+      hedonsum_n_pq1 = "Pleasurable Events Scale - substitute reinforcers",
+      hedonsum_y_pq1 = "Pleasurable Events Scale - complementary reinforcers",
+      Only.Menthol = "Exclusive Mentholated Cigarette User (Yes)",
+      readiness = "Readiness to quit smoking",
+      NMR = "Nicotine Metabolism Ratio"
+    ), type = list(
+      cpd_ps ~ "continuous",
+      ftcd_score ~ "continuous",
+      ftcd.5.mins ~ "dichotomous",
+      bdi_score_w00 ~ "continuous",
+      crv_total_pq1 ~ "continuous",
+      hedonsum_n_pq1 ~ "continuous",
+      hedonsum_y_pq1 ~ "continuous",
+      NMR ~ "continuous",
+      Only.Menthol ~ "dichotomous",
+      readiness ~ "continuous"),
+    value = list(
+      Only.Menthol ~ "1",
+      ftcd.5.mins ~ "1"),
+    statistic = list(all_continuous() ~ "{mean} ({sd})", all_categorical() ~ "{n} ({p}%)"),
+    digits = all_continuous() ~ 1,
+    missing = "no"
+  ) %>% add_overall() 
+# %>%
+#   modify_header(label ~ "Smoking")
+
+# Psychiatric table
+psychiatric_table <- table1_data %>%
+  dplyr::select(
+    treatment_cat,
+    shaps_score_pq1,
+    otherdiag,
+    antidepmed,
+    mde_curr
+  ) %>%
+  tbl_summary(
+    by = treatment_cat,
+    label = list(
+      shaps_score_pq1 = "Anhedonia",
+      otherdiag = "Other lifetime DSM-5 diagnosis (Yes)",
+      antidepmed = "Taking antidepressant medication at baseline (Yes)",
+      mde_curr = "Current vs past MDD (Yes)"
+    ),
+    type = list(shaps_score_pq1 ~ "continuous",
+      otherdiag ~ "dichotomous",
+      antidepmed ~ "dichotomous",
+      mde_curr ~ "dichotomous"),
+    value = list(otherdiag ~ "1",
+      antidepmed ~ "1",
+      mde_curr ~ "1"),
+    statistic = list(all_continuous() ~ "{mean} ({sd})", all_categorical() ~ "{n} ({p}%)"),
+    digits = all_continuous() ~ 1,
+    missing = "no"
+  ) %>% add_overall() 
+# %>%
+#   modify_header(label ~ "Psychiatric")
+
+# Merge tables
+final_table <- tbl_stack(
+  tbls = list(demographics_table, smoking_table, psychiatric_table),
+  group_header = c("Demographics", "Smoking", "Psychiatric")
+) %>%
+  modify_caption("Participant characteristics by treatment and overall sample") %>%
+  as_kable_extra(
+    booktabs = TRUE,
+    longtable = TRUE,
+    linesep = "",
+    format = "latex"
+  ) %>%
+  kable_styling(
+    position = "center",
+    latex_options = c("striped", "repeat_header"),
+    stripe_color = "gray!15",
+    font_size = 8
+  )
+
+
+final_table
+```
+\end{landscape}
+\newpage
 
 
 # Data Analysis
@@ -73,14 +303,14 @@ data<-read.csv("project2.csv")
 
 # Data Privacy and Code Availability
 
-The analysis dataset was obtained from..... The replication code can be found at https://github.com/AristofanisR/Practical_Data_Analysis_Project2
-
+The analysis dataset was obtained from..... The replication code can be found at <https://github.com/AristofanisR/Practical_Data_Analysis_Project2>
 
 \newpage
 
 # References
-<div id="refs"></div>
 
+::: {#refs}
+:::
 
 \newpage
 
@@ -88,8 +318,3 @@ The analysis dataset was obtained from..... The replication code can be found at
 
 ```{r ref.label = knitr::all_labels(), echo = TRUE, eval = FALSE}
 ```
-
-
-
-
-
