@@ -44,6 +44,7 @@ library(patchwork)
 library(dplyr)
 library(reshape2)
 library(tidyr)
+library(grid)
 library(lubridate)
 library(gtsummary)
 library(gt)
@@ -52,6 +53,7 @@ library(glmnet)
 library(bestglm)
 library(MASS)
 library(pROC)
+library(gridExtra)
 library(VIM)
 library(mice)
 library(leaps)
@@ -97,42 +99,6 @@ data = data  %>%
   ))
 
 ```
-
-```{r}
-#Missingness Table
-# Calculate missing values for each variable
-missing_summary <- data %>%
-  summarise(across(everything(), ~ sum(is.na(.)), .names = "missing_{col}")) %>%
-  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Number") %>%
-  mutate(Pct = (Number / nrow(data)) * 100) %>%
-  filter(Number > 0)  # Exclude variables with 0 missingness
-
-# Define a named vector with old and new names for variables
-variable_names <- c(
-  "inc" = "Income",
-  "ftcd_score" = "FTCD Score",
-  "crv_total_pqr" = "Cigarette reward at baseline",
-  "shaps_score_pqi" = "Anhedonia",
-  "NMR" = "Nicotine MEtabolism Ratio",
-  "Only.Menthol" = "Exclusive Mentholated Cigarette User",
-  "readiness" = "Baseline readiness to quit smoking"
-)
-
-# Rename variables in the summary table
-missing_summary <- missing_summary %>%
-  mutate(Variable = recode(Variable, !!!variable_names))
-
-# Load knitr for table formatting (optional)
-library(knitr)
-
-# Create and display the table
-missing_summary %>%
-  arrange(desc(Pct)) %>%
-  mutate(Pct = sprintf("%.2f%%", Pct)) %>%
-  kable(col.names = c("Variable", "Number", "Pct"), caption = "Table 1: Summary 
-        of Missing Values")
-```
-
 
 \newpage
 \begin{landscape}
@@ -300,6 +266,43 @@ final_table
 \end{landscape}
 \newpage
 
+
+```{r}
+#Missingness Table
+# Calculate missing values for each variable
+missing_summary <- data %>%
+  summarise(across(everything(), ~ sum(is.na(.)), .names = "missing_{col}")) %>%
+  pivot_longer(cols = everything(), names_to = "Variable", values_to = "Number") %>%
+  mutate(Pct = (Number / nrow(data)) * 100) %>%
+  filter(Number > 0)  # Exclude variables with 0 missingness
+
+# Define a named vector with old and new names for variables
+variable_names <- c(
+  "inc" = "Income",
+  "ftcd_score" = "FTCD Score",
+  "crv_total_pqr" = "Cigarette reward at baseline",
+  "shaps_score_pqi" = "Anhedonia",
+  "NMR" = "Nicotine MEtabolism Ratio",
+  "Only.Menthol" = "Exclusive Mentholated Cigarette User",
+  "readiness" = "Baseline readiness to quit smoking"
+)
+
+# Rename variables in the summary table
+missing_summary <- missing_summary %>%
+  mutate(Variable = recode(Variable, !!!variable_names))
+
+# Load knitr for table formatting (optional)
+library(knitr)
+
+# Create and display the table
+missing_summary %>%
+  arrange(desc(Pct)) %>%
+  mutate(Pct = sprintf("%.2f%%", Pct)) %>%
+  kable(col.names = c("Variable", "Number", "Pct"), caption = "Table 1: Summary 
+        of Missing Values")
+```
+
+
 ```{r}
 # Create a new variable that contains the 3 first levels of edu
 data <- data %>%
@@ -311,14 +314,6 @@ data <- data %>%
 
 
 ```
-
-
-```{r}
-# 1st Method: Perform KNN imputation with 5 neighbors
-data_imp <- kNN(data, k = 5, imp_var = FALSE)
-
-```
-$K-$Nearest Neighbors (KNN) Imputation is a method that fills in missing values in a dataset by looking at the values of other, similar observations. For each missing value in the dataset, the algorithm identifies the $k$ (=5 here) nearest neighbors (observations) based on other variables that are complete. These "neighbors" are the most similar observations in terms of overall feature values. Once the nearest neighbors are identified, the missing value is filled in by taking the average (for numerical data) or the most frequent category (for categorical data) of the values from these neighbors. Unlike simpler methods like mean or median imputation, KNN considers patterns and relationships within the data, making it more likely to produce values that are consistent with the existing data structure. This can be especially helpful if there are clusters or groups in the data, as KNN captures these structures.(?????? are there any clusters?)
 
 ```{r}
 # Second Method: MICE 
@@ -351,6 +346,8 @@ kable(table_race_menthol,
   footnote(chi_square_test_note, footnote_as_chunk = FALSE)
 
 ```
+
+# Data Analysis
 
 ```{r}
 # Modeling Preprocessing
@@ -464,109 +461,7 @@ result_table_lasso <- data.frame(
 ) %>%
   filter(Coefficient != 0)
 
-kable(result_table_lasso,
-      caption = "Lasso Model Coefficientsc at Optimal Lambda")
-
 ```
-
-
-```{r}
-# Roc/Auc
-predicted_prob_lasso <- predict(lasso_model,
-                                newx = as.matrix(test_variables_dummy_include),
-                                s = "lambda.min", type = "response")
-
-# Convert predictions to numeric if needed (glmnet returns a matrix)
-predicted_prob_lasso <- as.numeric(predicted_prob_lasso)
-
-# Plot ROC and calculate AUC
-# Generate ROC object
-roc_obj <- roc(test_outcome, predicted_prob_lasso)
-
-# Convert the ROC object to a data frame for ggplot2
-roc_data <- data.frame(
-  Specificity = rev(roc_obj$specificities),
-  Sensitivity = rev(roc_obj$sensitivities)
-)
-
-# Calculate the AUC
-auc_value <- auc(roc_obj)
-
-# Plot ROC curve with ggplot2
-ROC_lasso = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
-  geom_line(color = "purple", size = 1) +
-  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
-  annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", 
-  round(auc_value, 2)), 
-  size = 5, color = "Black") +
-  labs(
-    title = "ROC for the Lasso Model",
-    x = "1 - Specificity",
-    y = "Sensitivity"
-  ) +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5), 
-        plot.subtitle = element_text(hjust = 0.5))
-```
-
-```{r, fig.width = 12, fig.height = 4}
-# Calibration Plots
-num_cuts <- 10  # Number of bins for calibration
-
-calib_data <- data.frame(
-  prob = predicted_prob_lasso,  # predicted probabilities
-  # binning into `num_cuts` groups
-  bin = cut(predicted_prob_lasso, breaks = num_cuts),  
-  # observed values (abst outcome in test data)
-  class = as.numeric(test_outcome)-1  
-)
-
-calib_data <- calib_data %>%
-  group_by(bin) %>%
-  summarise(
-    observed = mean(class),  
-    predicted = mean(prob),  
-    se = sqrt(observed * (1 - observed) / n())  # Standard error
-  )
-
-# Add Loess Fit for Flexible Calibration Line
-loess_fit <- loess(observed ~ predicted, data = calib_data, span = 0.75)
-calib_data$loess_pred <- predict(loess_fit, calib_data$predicted)
-
-# Plot Calibration Curve with Error Bars
-calib_error_bar = ggplot(calib_data) +
-  geom_abline(intercept = 0, slope = 1, color = "red") +
-  geom_errorbar(aes(x = predicted, ymin = observed - 1.96 * se,
-                    ymax = observed + 1.96 * se),
-                colour="black", width=.01)+
-  geom_point(aes(x = predicted, y = observed)) +
-  labs(x = "Expected Probability of Smoking Abstinence",
-       y = "Actual Smoking Abstinence",
-       title = "Calibration Plot for Lasso Model with Error Bars") +
-  theme_minimal()
-
-
-# Plot Calibration Curve with Loess
-calib_data <- calib_data %>%
-  mutate(loess_ci_lower = loess_pred - 1.96 * sd(loess_pred),
-         loess_ci_upper = loess_pred + 1.96 * sd(loess_pred))
-
-calib_loess = ggplot(calib_data, aes(x = predicted, y = observed)) +
-  # Flexible calibration (Loess)
-  geom_line(aes(y = loess_pred), color = "black", linetype = "dashed") +  
-  geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), 
-              alpha = 0.2, fill = "grey") +
-  geom_abline(intercept = 0, slope = 1, color = "red") + # Perfect calibration line
-  labs(x = "Predicted Probability of Smoking Abstinence",
-       y = "Actual Smoking Abstinence",
-       title = "Calibration Plot for Lasso Model using LOESS") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
-
-
-print(calib_error_bar + calib_loess + ROC_lasso)
-```
-
 
 ```{r}
 # Logistic regression
@@ -633,11 +528,174 @@ logistic_model <- step(
 )
 
 # Display the summary of the final model
-summary(logistic_model)
+#summary(logistic_model)
 ```
+
+
+
+```{r}
+# Best subset selection
+
+# Run best subset selection with regsubsets
+best_subset_model <- regsubsets(
+  y = train_outcome, x = train_variables_dummy_include,
+  force.in = c("Var1", "BA1"), nbest = 1, 
+  nvmax = 100,  # Adjust this based on how many variables you want to consider
+  method = "seq", force.out = NULL,
+  really.big=T
+)
+
+# Summarize results
+best_subset_summary <- summary(best_subset_model)
+best_subset_summary = summary(best_subset_model)
+cp_min = which.min(best_subset_summary$cp) # min is 10
+best_subset_coefs = coef(best_subset_model, cp_min)
+best_subset_names = names(coef(best_subset_model, cp_min))
+```
+
+
+```{r}
+# Create a table with coefficients from Logistic, Lasso, Best Subset Selection
+
+# Logistic coefficients
+stepwise_coefs <- coef(logistic_model)
+stepwise_df <- data.frame(
+  variable = names(stepwise_coefs),
+  `Stepwise` = as.numeric(stepwise_coefs)
+)
+
+# Lasso coefficients
+lasso_df <- result_table_lasso %>%
+  rename(`Lasso` = Coefficient)
+
+# Best subset coefficients
+best_subset_df <- data.frame(
+  variable = names(best_subset_coefs),
+  `Best Subset` = as.numeric(best_subset_coefs)
+)
+
+# Merge all into one table based on variable names
+combined_df <- full_join(lasso_df, stepwise_df, by = "variable") %>%
+  full_join(best_subset_df, by = "variable") %>%
+  mutate(across(where(is.numeric), ~ round(.x, 6)))
+
+# Remove the intercept row
+combined_df <- combined_df[combined_df$variable != "(Intercept)", ]
+
+# Replace NA values with an empty space
+combined_df[is.na(combined_df)] <- " "
+
+colnames(combined_df) <- gsub("Best.Subset", "Best Subset", colnames(combined_df))
+
+# Change "variable" to "Variables" in the combined_df
+colnames(combined_df)[colnames(combined_df) == "variable"] <- "Variables"
+
+# Display the final combined table
+kable(combined_df, row.names = FALSE,
+      caption = "Summary of Coefficients for Moderator Effects across 3 Selection Methods")
+
+
+# Display the final combined table
+kable(combined_df, row.names = F,
+      caption = "Summary of Coefficients for Moderator Effects across 3 Selection Methods")
+```
+
 
 ```{r}
 # Roc/Auc
+predicted_prob_lasso <- predict(lasso_model,
+                                newx = as.matrix(test_variables_dummy_include),
+                                s = "lambda.min", type = "response")
+
+# Convert predictions to numeric if needed (glmnet returns a matrix)
+predicted_prob_lasso <- as.numeric(predicted_prob_lasso)
+
+# Plot ROC and calculate AUC
+# Generate ROC object
+roc_obj <- roc(test_outcome, predicted_prob_lasso)
+
+# Convert the ROC object to a data frame for ggplot2
+roc_data <- data.frame(
+  Specificity = rev(roc_obj$specificities),
+  Sensitivity = rev(roc_obj$sensitivities)
+)
+
+# Calculate the AUC
+auc_value <- auc(roc_obj)
+
+# Plot ROC curve with ggplot2
+ROC_lasso = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
+  geom_line(color = "purple", size = 1) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
+  annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", 
+  round(auc_value, 2)), 
+  size = 5, color = "Black") +
+  labs(
+    x = "1 - Specificity",
+    y = "Sensitivity"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5), 
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+```{r, fig.width = 12, fig.height = 4}
+# Calibration Plots
+num_cuts <- 10  # Number of bins for calibration
+
+calib_data <- data.frame(
+  prob = predicted_prob_lasso,  # predicted probabilities
+  # binning into `num_cuts` groups
+  bin = cut(predicted_prob_lasso, breaks = num_cuts),  
+  # observed values (abst outcome in test data)
+  class = as.numeric(test_outcome)-1  
+)
+
+calib_data <- calib_data %>%
+  group_by(bin) %>%
+  summarise(
+    observed = mean(class),  
+    predicted = mean(prob),  
+    se = sqrt(observed * (1 - observed) / n())  # Standard error
+  )
+
+# Add Loess Fit for Flexible Calibration Line
+loess_fit <- loess(observed ~ predicted, data = calib_data, span = 0.75)
+calib_data$loess_pred <- predict(loess_fit, calib_data$predicted)
+
+# Plot Calibration Curve with Error Bars
+calib_error_bar_lasso = ggplot(calib_data) +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  geom_errorbar(aes(x = predicted, ymin = observed - 1.96 * se,
+                    ymax = observed + 1.96 * se),
+                colour="black", width=.01)+
+  geom_point(aes(x = predicted, y = observed)) +
+  labs(x = "Expected Probability of Smoking Abstinence",
+       y = "Actual Smoking Abstinence") +
+  theme_minimal()
+
+
+# Plot Calibration Curve with Loess
+calib_data <- calib_data %>%
+  mutate(loess_ci_lower = loess_pred - 1.96 * sd(loess_pred),
+         loess_ci_upper = loess_pred + 1.96 * sd(loess_pred))
+
+calib_loess_lasso = ggplot(calib_data, aes(x = predicted, y = observed)) +
+  # Flexible calibration (Loess)
+  geom_line(aes(y = loess_pred), color = "black", linetype = "dashed") +  
+  geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), 
+              alpha = 0.2, fill = "grey") +
+  geom_abline(intercept = 0, slope = 1, color = "red") + # Perfect calibration line
+  labs(x = "Predicted Probability of Smoking Abstinence",
+       y = "Actual Smoking Abstinence") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+
+```{r}
+# ROC/AUC
 predicted_prob_logistic <- predict(logistic_model,
                                 newdata = test_data,
                                 type = "response")
@@ -659,13 +717,12 @@ roc_data <- data.frame(
 auc_value <- auc(roc_obj)
 
 # Plot ROC curve with ggplot2
-ROC_logistic = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
+ROC_step = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
   geom_line(color = "purple", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
   annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", 
                                                    round(auc_value, 2)), 
            size = 5, color = "Black") + labs(
-    title = "ROC for the Stepwise Logistic Model",
     x = "1 - Specificity",
     y = "Sensitivity"
   ) +
@@ -673,6 +730,7 @@ ROC_logistic = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5))
 ```
+
 
 ```{r, fig.width = 12, fig.height = 4}
 # Calibration Plots
@@ -699,15 +757,14 @@ loess_fit <- loess(observed ~ predicted, data = calib_data, span = 0.75)
 calib_data$loess_pred <- predict(loess_fit, calib_data$predicted)
 
 # Plot Calibration Curve with Error Bars
-calib_error_bar = ggplot(calib_data) +
+calib_error_bar_step = ggplot(calib_data) +
   geom_abline(intercept = 0, slope = 1, color = "red") +
   geom_errorbar(aes(x = predicted, ymin = observed - 1.96 * se,
                     ymax = observed + 1.96 * se),
                 colour="black", width=.01)+
   geom_point(aes(x = predicted, y = observed)) +
   labs(x = "Expected Probability of Smoking Abstinence",
-       y = "Actual Smoking Abstinence",
-       title = "Calibration Plot for Logistic Model with Error Bars") +
+       y = "Actual Smoking Abstinence") +
   theme_minimal()
 
 
@@ -716,7 +773,7 @@ calib_data <- calib_data %>%
   mutate(loess_ci_lower = loess_pred - 1.96 * sd(loess_pred),
          loess_ci_upper = loess_pred + 1.96 * sd(loess_pred))
 
-calib_loess = ggplot(calib_data, aes(x = predicted, y = observed)) +
+calib_loess_step = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
   geom_line(aes(y = loess_pred), color = "black", linetype = "dashed") +  
   geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), 
@@ -725,76 +782,153 @@ calib_loess = ggplot(calib_data, aes(x = predicted, y = observed)) +
   geom_abline(intercept = 0, slope = 1, color = "red") +  
   # Perfect calibration line
   labs(x = "Predicted Probability of Smoking Abstinence",
-       y = "Actual Smoking Abstinence",
-       title = "Calibration Plot for Logistic Model using LOESS") +
+       y = "Actual Smoking Abstinence") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+# ROC/AUC
+predict_best_subset <- function(test_data = test_variables_dummy_include,
+                                best_subset_coefs) {
+  intercept <- best_subset_coefs[1]
+  selected_vars <- names(best_subset_coefs)[-1]
+ 
+  test_subset <- test_data[, selected_vars, drop = FALSE]  
+ 
+  # Calculate predictions by multiplying test data with coefficients
+  # Matrix multiplication for predictors + intercept
+  predictions <- intercept + as.matrix(test_subset) %*% best_subset_coefs[selected_vars]
+ 
+  return(predictions)
+}
+
+predicted_prob_best_subset <- predict_best_subset(test_data = test_variables_dummy_include,
+                                   best_subset_coefs)
+# Convert predictions to numeric
+predicted_prob_best_subset <- as.numeric(predicted_prob_best_subset) -1
+
+# Plot ROC and calculate AUC
+# Generate ROC object
+roc_obj <- roc(test_outcome, predicted_prob_best_subset)
+
+# Convert the ROC object to a data frame for ggplot2
+roc_data <- data.frame(
+  Specificity = rev(roc_obj$specificities),
+  Sensitivity = rev(roc_obj$sensitivities)
+)
+
+# Calculate the AUC
+auc_value <- auc(roc_obj)
+
+# Plot ROC curve with ggplot2
+ROC_best_subset = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
+  geom_line(color = "purple", size = 1) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
+  annotate("text", x = 0.8, y = 0.2,
+           label = paste("AUC =", round(auc_value, 2)), size = 5, color = "Black") +
+  labs(
+    x = "1 - Specificity",
+    y = "Sensitivity"
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
+```
+
+
+```{r, fig.width = 12, fig.height = 4}
+# Calibration plots
+num_cuts <- 10  # Number of bins for calibration
+
+calib_data <- data.frame(
+  prob = predicted_prob_best_subset,  # predicted probabilities
+  # binning into `num_cuts` groups
+  bin = cut(predicted_prob_logistic, breaks = num_cuts),  
+  # observed values (abst outcome in test data)
+  class = as.numeric(test_outcome)-1  
+)
+
+calib_data <- calib_data %>%
+  group_by(bin) %>%
+  summarise(
+    observed = mean(class),  
+    predicted = mean(prob),  
+    se = sqrt(observed * (1 - observed) / n())  # Standard error
+  )
+
+# Add Loess Fit for Flexible Calibration Line
+loess_fit <- loess(observed ~ predicted, data = calib_data, span = 0.75)
+calib_data$loess_pred <- predict(loess_fit, calib_data$predicted)
+
+# Plot Calibration Curve with Error Bars
+calib_error_bar_bss = ggplot(calib_data) +
+  geom_abline(intercept = 0, slope = 1, color = "red") +
+  geom_errorbar(aes(x = predicted, ymin = observed - 1.96 * se,
+                    ymax = observed + 1.96 * se),
+                colour="black", width=.01)+
+  geom_point(aes(x = predicted, y = observed)) +
+  labs(x = "Expected Probability of Smoking Abstinence",
+       y = "Actual Smoking Abstinence") +
+  theme_minimal()
+ 
+
+# Plot Calibration Curve with Loess
+calib_data <- calib_data %>%
+  mutate(loess_ci_lower = loess_pred - 1.96 * sd(loess_pred),
+         loess_ci_upper = loess_pred + 1.96 * sd(loess_pred))
+
+calib_loess_bss = ggplot(calib_data, aes(x = predicted, y = observed)) +
+  # Flexible calibration (Loess)
+  geom_line(aes(y = loess_pred), color = "blue", linetype = "dashed") +  
+  geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), alpha = 0.2, fill = "grey") +
+  geom_abline(intercept = 0, slope = 1, color = "red") +  # Perfect calibration line
+  labs(x = "Predicted Probability of Smoking Abstinence",
+       y = "Actual Smoking Abstinence") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))
 
-
-print(calib_error_bar + calib_loess + ROC_logistic)
 ```
 
-```{r}
-# Best subset selection
+```{r, fig.width = 12, fig.height =12}
+# Create the 3x3 plot "matrix"
+plots_step = arrangeGrob(
+  calib_error_bar_step, calib_loess_step, ROC_step,
+  ncol = 3,
+  left = textGrob("Stepwise Selection", rot = 90,
+                 gp = gpar(fontface = "bold", fontsize = 16)
+))
 
-# Run best subset selection with regsubsets
-best_subset_model <- regsubsets(
-  y = train_outcome, x = train_variables_dummy_include,
-  force.in = c("Var1", "BA1"), nbest = 1, 
-  nvmax = 100,  # Adjust this based on how many variables you want to consider
-  method = "seq", force.out = NULL,
-  really.big=T
+plots_lasso = arrangeGrob(
+  calib_error_bar_lasso, calib_loess_lasso, ROC_lasso,
+  ncol = 3,
+  left = textGrob("Lasso Regression", rot = 90,
+                 gp = gpar(fontface = "bold", fontsize = 16)
+))
+
+plots_bss = arrangeGrob(
+  calib_error_bar_bss, calib_loess_bss, ROC_best_subset,
+  ncol = 3,
+  left = textGrob("Best Subset Selection", rot = 90,
+                 gp = gpar(fontface = "bold", fontsize = 16)
+))
+
+# Bold the main title
+main_title <- textGrob(
+  "Calibration Plots with Error Bars and LOESS - ROC Curves (for the 3 Selection Models)",
+  gp = gpar(fontface = "bold", fontsize = 18)
 )
 
-# Summarize results
-best_subset_summary <- summary(best_subset_model)
-best_subset_summary = summary(best_subset_model)
-cp_min = which.min(best_subset_summary$cp) # min is 10
-best_subset_coefs = coef(best_subset_model, cp_min)
-best_subset_names = names(coef(best_subset_model, cp_min))
+# Arrange everything with the bold title
+grid.arrange(
+  plots_lasso,
+  plots_step,
+  plots_bss,
+  nrow = 3,
+  top = main_title
+)
 ```
 
-```{r}
-# Create a table with coefficients from Logistic, Lasso, Best Subset Selection
-
-# Logistic coefficients
-stepwise_coefs <- coef(logistic_model)
-stepwise_df <- data.frame(
-  variable = names(stepwise_coefs),
-  `Stepwise` = as.numeric(stepwise_coefs)
-)
-
-# Lasso coefficients
-lasso_df <- result_table_lasso %>%
-  rename(`Lasso` = Coefficient)
-
-# Best subset coefficients
-best_subset_df <- data.frame(
-  variable = names(best_subset_coefs),
-  `Best Subset` = as.numeric(best_subset_coefs)
-)
-
-# Merge all into one table based on variable names
-combined_df <- full_join(stepwise_df, lasso_df, by = "variable") %>%
-  full_join(best_subset_df, by = "variable") %>%
-  mutate(across(where(is.numeric), ~ round(.x, 6)))
-
-# Remove the intercept row
-combined_df <- combined_df[combined_df$variable != "(Intercept)", ]
-
-# Replace NA values with an empty space
-combined_df[is.na(combined_df)] <- " "
-
-colnames(combined_df) <- gsub("Best.Subset", "Best Subset", colnames(combined_df))
-
-# Display the final combined table
-kable(combined_df, row.names = F,
-      caption = "Summary of Coefficients for Moderator Effects across 3 Selection Methods")
-```
-
-
-
-# Data Analysis
 
 # Results
 
