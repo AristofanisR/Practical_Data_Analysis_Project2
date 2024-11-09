@@ -54,6 +54,7 @@ library(MASS)
 library(pROC)
 library(VIM)
 library(mice)
+library(leaps)
 ```
 
 ```{r}
@@ -128,7 +129,8 @@ library(knitr)
 missing_summary %>%
   arrange(desc(Pct)) %>%
   mutate(Pct = sprintf("%.2f%%", Pct)) %>%
-  kable(col.names = c("Variable", "Number", "Pct"), caption = "Table 1: Summary of Missing Values")
+  kable(col.names = c("Variable", "Number", "Pct"), caption = "Table 1: Summary 
+        of Missing Values")
 ```
 
 
@@ -182,7 +184,8 @@ demographics_table <- table1_data %>%
       edu ~ "categorical"),
     value = list(
       sex_ps ~ "2"),
-    statistic = list(all_continuous() ~ "{mean} ({sd})", all_categorical() ~ "{n} ({p}%)"),
+    statistic = list(all_continuous() ~ "{mean} ({sd})", 
+                     all_categorical() ~ "{n} ({p}%)"),
     digits = all_continuous() ~ 1,
     missing = "no"
   ) %>% add_overall() 
@@ -264,7 +267,8 @@ psychiatric_table <- table1_data %>%
     value = list(otherdiag ~ "1",
       antidepmed ~ "1",
       mde_curr ~ "1"),
-    statistic = list(all_continuous() ~ "{mean} ({sd})", all_categorical() ~ "{n} ({p}%)"),
+    statistic = list(all_continuous() ~ "{mean} ({sd})", 
+                     all_categorical() ~ "{n} ({p}%)"),
     digits = all_continuous() ~ 1,
     missing = "no"
   ) %>% add_overall() 
@@ -320,10 +324,10 @@ $K-$Nearest Neighbors (KNN) Imputation is a method that fills in missing values 
 # Second Method: MICE 
 # Perform MICE imputation
 data_mice <- mice(data, m = 5
-                  , method = "pmm", maxit = 50, seed = 1, printFlag= FALSE)
+                  , method = "pmm", maxit = 50, seed = 58, printFlag= FALSE)
 
 # Complete the data by extracting one of the imputed datasets
-data_mice <- complete(data_mice, action = 1)
+data_mice <- complete(data_mice, action = 4)
 ```
 
 ```{r}
@@ -364,7 +368,7 @@ variables_dummy <- model.matrix(~ 0 + ., data = variables)
 variables_dummy <- variables_dummy[, -which(colnames(variables_dummy) =="Var0")]
 
 # Split into train and test
-set.seed(1)
+set.seed(58)
 train_index <- sample(1:nrow(data_mice), 0.7 * nrow(data_mice))
 train_data <- data_mice[train_index,]
 test_data <- data_mice[-train_index,]
@@ -387,10 +391,10 @@ test_data_glmnet = data.frame(abst = test_outcome, test_variables_dummy)
 # ^2 generates all pairwise interactions
 train_variables_dummy_df <- as.data.frame(train_variables_dummy)
 train_variables_dummy_full_interactions <- model.matrix(~ .^2,
-                                                         data = train_variables_dummy_df)
+                                              data = train_variables_dummy_df)
 test_variables_dummy_df <- as.data.frame(test_variables_dummy)
 test_variables_dummy_full_interactions <- model.matrix(~ .^2,
-                                                         data = test_variables_dummy_df)
+                                               data = test_variables_dummy_df)
 
 
 
@@ -443,7 +447,7 @@ ba1_col <- grep("^BA1$", colnames(train_variables_dummy_include))
 penalty_factors[c(var1_col, ba1_col)] <- 0
 names(penalty_factors) <- colnames(train_variables_dummy_include)
 
-
+set.seed(58)
 lasso_model <- cv.glmnet(as.matrix(train_variables_dummy_include), train_outcome,
                          penalty.factor = penalty_factors,
                          alpha = 1, family = "binomial")
@@ -492,18 +496,21 @@ auc_value <- auc(roc_obj)
 ROC_lasso = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
   geom_line(color = "purple", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
-  annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", round(auc_value, 2)), size = 5, color = "Black") +
+  annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", 
+  round(auc_value, 2)), 
+  size = 5, color = "Black") +
   labs(
     title = "ROC for the Lasso Model",
     x = "1 - Specificity",
     y = "Sensitivity"
   ) +
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5), 
+        plot.subtitle = element_text(hjust = 0.5))
 ```
 
 ```{r, fig.width = 12, fig.height = 4}
-# Callibration Plots
+# Calibration Plots
 num_cuts <- 10  # Number of bins for calibration
 
 calib_data <- data.frame(
@@ -547,8 +554,9 @@ calib_data <- calib_data %>%
 calib_loess = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
   geom_line(aes(y = loess_pred), color = "black", linetype = "dashed") +  
-  geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), alpha = 0.2, fill = "grey") +
-  geom_abline(intercept = 0, slope = 1, color = "red") +  # Perfect calibration line
+  geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), 
+              alpha = 0.2, fill = "grey") +
+  geom_abline(intercept = 0, slope = 1, color = "red") + # Perfect calibration line
   labs(x = "Predicted Probability of Smoking Abstinence",
        y = "Actual Smoking Abstinence",
        title = "Calibration Plot for Lasso Model using LOESS") +
@@ -565,7 +573,8 @@ print(calib_error_bar + calib_loess + ROC_lasso)
 
 # Define outcome and predictor variables
 outcome <- data_mice$abst
-variable_names <- c("Var", "BA", "age_ps", "sex_ps", "inc", "edu_merged", "race",
+variable_names <- c("Var", "BA", "age_ps", "sex_ps", "inc", "edu_merged", 
+                    "race",
                     "ftcd_score", "ftcd.5.mins", "bdi_score_w00", "cpd_ps",
                     "crv_total_pq1", "hedonsum_n_pq1", "hedonsum_y_pq1",
                     "shaps_score_pq1", "otherdiag", "antidepmed", "mde_curr",
@@ -577,38 +586,50 @@ variables$Var <- factor(variables$Var)
 variables$BA <- factor(variables$BA)
 
 # Main effects for `Var` and `BA` (to be controlled in all models)
-main_effects <- paste(c("Var", "BA", "age_ps", "sex_ps", "inc", "edu_merged", "race",
-                        "ftcd_score", "ftcd.5.mins", "bdi_score_w00", "cpd_ps",
-                        "crv_total_pq1", "hedonsum_n_pq1", "hedonsum_y_pq1",
-                        "shaps_score_pq1", "otherdiag", "antidepmed", "mde_curr",
-                        "NMR", "Only.Menthol", "readiness"), collapse = " + ")
+main_effects <- paste(c("Var", "BA", "age_ps", "sex_ps", "inc", 
+                        "edu_merged", "race",
+                        "ftcd_score", "ftcd.5.mins", "bdi_score_w00", 
+                        "cpd_ps",
+                        "crv_total_pq1", "hedonsum_n_pq1", 
+                        "hedonsum_y_pq1",
+                        "shaps_score_pq1", "otherdiag", "antidepmed", 
+                        "mde_curr",
+                        "NMR", "Only.Menthol", "readiness"), 
+                      collapse = " + ")
 
 # Define the interaction terms we want to consider
 interaction_terms <- paste(
   "BA:mde_curr + BA:age_ps + BA:sex_ps + BA:race + BA:ftcd_score + BA:cpd_ps",
   "Var:age_ps + Var:sex_ps + Var:race + Var:ftcd_score + Var:cpd_ps",
-  "inc:edu_merged + antidepmed:readiness + Only.Menthol:readiness + mde_curr:readiness",
-  "ftcd.5.mins:readiness + bdi_score_w00:readiness + Var:shaps_score_pq1 + BA:shaps_score_pq1",
-  "shaps_score_pq1:mde_curr + sex_ps:ftcd_score + race:ftcd_score + age_ps:ftcd_score",
-  "sex_ps:Only.Menthol + race:Only.Menthol + inc:Only.Menthol + edu_merged:Only.Menthol",
+  "inc:edu_merged + antidepmed:readiness + Only.Menthol:readiness + 
+  mde_curr:readiness",
+  "ftcd.5.mins:readiness + bdi_score_w00:readiness + Var:shaps_score_pq1 + 
+  BA:shaps_score_pq1",
+  "shaps_score_pq1:mde_curr + sex_ps:ftcd_score + race:ftcd_score + 
+  age_ps:ftcd_score",
+  "sex_ps:Only.Menthol + race:Only.Menthol + inc:Only.Menthol + 
+  edu_merged:Only.Menthol",
   "sex_ps:NMR + age_ps:NMR + cpd_ps:NMR + NMR:readiness + ftcd_score:NMR",
   sep = " + "
 )
 
 # Full formula for main effects and interactions
-full_formula <- as.formula(paste("abst ~", main_effects, "+", interaction_terms))
+full_formula <- as.formula(paste("abst ~", main_effects,
+                                 "+", interaction_terms))
 
 # Define scope with `Var` and `BA` as forced terms in the main model
 scope_list <- list(
   lower = as.formula("abst ~ Var + BA"),  # Minimal model with controlled terms
-  upper = full_formula                    # Full model with all main and interaction terms
+  upper = full_formula         # Full model with all main and interaction terms
 )
 
 # Fit logistic regression model with stepwise selection
+set.seed(58)
 logistic_model <- step(
   glm(formula = abst ~ Var + BA, data = train_data, family = "binomial"),
   scope = scope_list,
-  direction = "both"  
+  direction = "both",
+  trace=0
 )
 
 # Display the summary of the final model
@@ -641,18 +662,20 @@ auc_value <- auc(roc_obj)
 ROC_logistic = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
   geom_line(color = "purple", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
-  annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", round(auc_value, 2)), size = 5, color = "Black") +
-  labs(
+  annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", 
+                                                   round(auc_value, 2)), 
+           size = 5, color = "Black") + labs(
     title = "ROC for the Stepwise Logistic Model",
     x = "1 - Specificity",
     y = "Sensitivity"
   ) +
   theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))
+  theme(plot.title = element_text(hjust = 0.5),
+        plot.subtitle = element_text(hjust = 0.5))
 ```
 
 ```{r, fig.width = 12, fig.height = 4}
-# Callibration Plots
+# Calibration Plots
 num_cuts <- 10  # Number of bins for calibration
 
 calib_data <- data.frame(
@@ -696,8 +719,11 @@ calib_data <- calib_data %>%
 calib_loess = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
   geom_line(aes(y = loess_pred), color = "black", linetype = "dashed") +  
-  geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), alpha = 0.2, fill = "grey") +
-  geom_abline(intercept = 0, slope = 1, color = "red") +  # Perfect calibration line
+  geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), 
+              alpha = 0.2,
+              fill = "grey") +
+  geom_abline(intercept = 0, slope = 1, color = "red") +  
+  # Perfect calibration line
   labs(x = "Predicted Probability of Smoking Abstinence",
        y = "Actual Smoking Abstinence",
        title = "Calibration Plot for Logistic Model using LOESS") +
@@ -707,6 +733,66 @@ calib_loess = ggplot(calib_data, aes(x = predicted, y = observed)) +
 
 print(calib_error_bar + calib_loess + ROC_logistic)
 ```
+
+```{r}
+# Best subset selection
+
+# Run best subset selection with regsubsets
+best_subset_model <- regsubsets(
+  y = train_outcome, x = train_variables_dummy_include,
+  force.in = c("Var1", "BA1"), nbest = 1, 
+  nvmax = 100,  # Adjust this based on how many variables you want to consider
+  method = "seq", force.out = NULL,
+  really.big=T
+)
+
+# Summarize results
+best_subset_summary <- summary(best_subset_model)
+best_subset_summary = summary(best_subset_model)
+cp_min = which.min(best_subset_summary$cp) # min is 10
+best_subset_coefs = coef(best_subset_model, cp_min)
+best_subset_names = names(coef(best_subset_model, cp_min))
+```
+
+```{r}
+# Create a table with coefficients from Logistic, Lasso, Best Subset Selection
+
+# Logistic coefficients
+stepwise_coefs <- coef(logistic_model)
+stepwise_df <- data.frame(
+  variable = names(stepwise_coefs),
+  `Stepwise` = as.numeric(stepwise_coefs)
+)
+
+# Lasso coefficients
+lasso_df <- result_table_lasso %>%
+  rename(`Lasso` = Coefficient)
+
+# Best subset coefficients
+best_subset_df <- data.frame(
+  variable = names(best_subset_coefs),
+  `Best Subset` = as.numeric(best_subset_coefs)
+)
+
+# Merge all into one table based on variable names
+combined_df <- full_join(stepwise_df, lasso_df, by = "variable") %>%
+  full_join(best_subset_df, by = "variable") %>%
+  mutate(across(where(is.numeric), ~ round(.x, 6)))
+
+# Remove the intercept row
+combined_df <- combined_df[combined_df$variable != "(Intercept)", ]
+
+# Replace NA values with an empty space
+combined_df[is.na(combined_df)] <- " "
+
+colnames(combined_df) <- gsub("Best.Subset", "Best Subset", colnames(combined_df))
+
+# Display the final combined table
+kable(combined_df, row.names = F,
+      caption = "Summary of Coefficients for Moderator Effects across 3 Selection Methods")
+```
+
+
 
 # Data Analysis
 
