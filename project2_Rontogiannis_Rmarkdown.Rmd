@@ -11,19 +11,19 @@ output:
   pdf_document: 
     latex_engine: xelatex
     keep_tex: true
-bibliography: References.bib
+    number_sections: true
+
 link-citations: yes
+abstract: |
+  **Purpose**: 
+  
+  **Methods**: 
+    
+  **Results**: 
+
+  **Conclusions**: 
+bibliography: References.bib
 ---
-
-# Abstract
-
-**Purpose**:
-
-**Methods**:
-
-**Results**:
-
-**Conclusions**:
 
 # Introduction
 
@@ -124,7 +124,7 @@ data = data  %>%
 
 ```
 
-````{=tex}
+
 \newpage
 \begin{landscape}
 ```{r}
@@ -180,10 +180,7 @@ demographics_table <- table1_data %>%
     digits = all_continuous() ~ 1,
     missing = "no"
   ) %>% add_overall() 
-# %>%
-# modify_column_indent(columns = label,
-# rows = !row_type %in% "label",
-# indent = 4L)
+
 
 # Smoking table
 smoking_table <- table1_data %>%
@@ -231,8 +228,6 @@ smoking_table <- table1_data %>%
     digits = all_continuous() ~ 1,
     missing = "no"
   ) %>% add_overall()
-# %>%
-#   modify_header(label ~ "Smoking")
 
 # Psychiatric table
 psychiatric_table <- table1_data %>%
@@ -263,8 +258,7 @@ psychiatric_table <- table1_data %>%
     digits = all_continuous() ~ 1,
     missing = "no"
   ) %>% add_overall() 
-# %>%
-#   modify_header(label ~ "Psychiatric")
+
 
 # Merge tables
 final_table <- tbl_stack(
@@ -290,12 +284,11 @@ final_table
 ```
 \end{landscape}
 \newpage
-````
+
 
 Additionally, to facilitate certain analyses, a new variable was created to consolidate education levels. The three lower levels of education (Grade school, Some high school and high school graduate or GED) were combined into a single category representing lower education levels. This aggregation simplifies the education variable, as those three levels contained a small amount of participants, allowing for broader categorical comparisons while retaining essential information on educational background.
 
-The missing data analysis involves examining the extent of missingness across variables in the dataset. A summary table was generated (Table 2), listing variables with missing values, the count of missing entries for each variable, and the corresponding percentage relative to the total sample size. For example, the variable with the highest missingness is the NMR (7%), followed by the variables crv_total_pq1 (6%) and readiness (5.67%). Variables with no missing values were excluded from this table for clarity. This missingness analysis is a critical step in data preparation, as it helps to address data quality issues and ensure that the dataset is ready for further statistical modeling and interpretation. The total percentage of missingness was around 20%. If we delete all the rows with missing data we might lose a significant portion of our dataset, which could reduce the statistical power of our analyses and lead to biased estimates. 
-
+The missing data analysis involves examining the extent of missingness across variables in the dataset. A summary table was generated (Table 2), listing variables with missing values, the count of missing entries for each variable, and the corresponding percentage relative to the total sample size. For example, the variable with the highest missingness is the NMR (7%), followed by the variables crv_total_pq1 (6%) and readiness (5.67%). Variables with no missing values were excluded from this table for clarity. This missingness analysis is a critical step in data preparation, as it helps to address data quality issues and ensure that the dataset is ready for further statistical modeling and interpretation. The total percentage of missingness was around 20%. If we delete all the rows with missing data we might lose a significant portion of our dataset, which could reduce the statistical power of our analyses and lead to biased estimates.
 
 ```{r}
 #Missingness Table
@@ -344,12 +337,9 @@ data <- data %>%
 
 ```
 
-
 To handle missing data, the Multiple Imputation by Chained Equations (MICE) method was applied. MICE is an iterative process that generates multiple plausible datasets by imputing missing values based on the observed data structure. Here, we used predictive mean matching (PMM) as the imputation method. PMM is advantageous as it imputes realistic values by using observed values from other participants with similar predictive values.
 
 ################In this process, we generated five imputed datasets (m = 5), with a maximum of 50 iterations per imputation to ensure convergence. After completing the imputations, we selected the fourth imputed dataset (action = 4) to proceed with further analysis. This approach allows us to account for the uncertainty in imputed values while maintaining dataset integrity for reliable downstream analyses.######## borei na kanw mean and mode
-
-
 
 ```{r}
 # MICE 
@@ -366,7 +356,6 @@ As part of the Explanatory Data Analysis, we want to examine the relationship be
 The Chi-square test produced a very low p-value, indicating a statistically significant association between race and menthol cigarette use. This result suggests that menthol cigarette usage depends on race, as there appears to be a notable relationship between the two variables.
 
 We can easily observe from Table 3 that Black individuals have a preference for menthol cigarettes over regular non-menthol ones (130 out of 157 people).
-
 
 ```{r}
 # Check the relationship between Menthol Cigarettes and Race
@@ -393,6 +382,7 @@ kable(table_race_menthol,
 # Data Analysis
 
 ## Lasso Regression
+
 In this part of the analysis, we implemented a Lasso regression to identify potential moderators of the treatment effects on smoking abstinence. By using Lasso, we aim to reduce the model to a subset of variables and interaction terms that are most predictive of the outcome. Lasso is particularly useful here as it performs variable selection by penalizing the coefficients of less relevant variables, ultimately setting them to zero, which leads to a more interpretable model.
 
 To ensure that the variables Var and BA are kept controlled in the model, we set a zero penalty for them (those variables are crucial for investigating treatment interactions and their effect on abstinence). We also added interaction terms for treatment and baseline variables to explore whether the effect of treatment varies based on baseline characteristics.
@@ -527,15 +517,14 @@ result_table_lasso <- data.frame(
 
 ```
 
-
-
 ## Stepwise Logistic Regression
 
-Furthermore, we performed stepwise logistic regression to determine the optimal combination of variables and interaction terms for predicting smoking abstinence. The process starts by defining both the outcome variable and a set of moderator and predictor variables. Specifically, the outcome variable  represents abstinence, and a set of relevant predictor variables is selected from our dataset based on their potential influence on the outcome. These predictors include demographic information, baseline characteristics, and other relevant factors. The model is built to include both main effects (the predictors' direct effects on abstinence) and potential interaction terms. The main effects include the variables Var and BA, that should be controlled in all models. We also used additional predictors like age, gender, income, education level, race, and other baseline measures. Additionally, a set of interaction terms is specified, particularly those involving BA and Var, to explore moderation effects. These interaction terms allow the model to capture relationships where the effect of one predictor on abstinence might depend on the level of another predictor, adding a layer of complexity to the model.
+Furthermore, we performed stepwise logistic regression to determine the optimal combination of variables and interaction terms for predicting smoking abstinence. The process starts by defining both the outcome variable and a set of moderator and predictor variables. Specifically, the outcome variable represents abstinence, and a set of relevant predictor variables is selected from our dataset based on their potential influence on the outcome. These predictors include demographic information, baseline characteristics, and other relevant factors. The model is built to include both main effects (the predictors' direct effects on abstinence) and potential interaction terms. The main effects include the variables Var and BA, that should be controlled in all models. We also used additional predictors like age, gender, income, education level, race, and other baseline measures. Additionally, a set of interaction terms is specified, particularly those involving BA and Var, to explore moderation effects. These interaction terms allow the model to capture relationships where the effect of one predictor on abstinence might depend on the level of another predictor, adding a layer of complexity to the model.
 
 Using the step function, the model undergoes stepwise logistic regression, which involves both forward and backward selection to find the most effective model. This approach adds or removes predictors and interactions iteratively, aiming to optimize the model based on the Akaike Information Criterion (AIC).
 
 To sum up, this stepwise approach optimizes the logistic regression model by keeping the most relevant predictors and discarding those that do not improve the model’s performance, leading to an efficient and interpretable model for predicting smoking abstinence.
+
 ```{r}
 # Logistic regression
 
@@ -634,7 +623,11 @@ best_subset_coefs = coef(best_subset_model, cp_min)
 best_subset_names = names(coef(best_subset_model, cp_min))
 ```
 
-Table 4 compares the coefficients of variables selected by the three different modeling approaches: logistic regression with stepwise selection, Lasso regression, and best subset selection. This combined table allows for easy comparison of the variables deemed most predictive across these methods and their respective coefficients. 
+## Comparison between the three model selection methods
+
+Table 4 compares the coefficients of variables selected by the three different modeling approaches: logistic regression with stepwise selection, Lasso regression, and best subset selection. This combined table allows for easy comparison of the variables who are considered the most predictive across these methods and their respective coefficients.
+
+We can observe that except BA1 and Var1 (obviously - we forced them) there are no other common variables between all three model selection methods. However, there are two common variables between Lasso and Stepwise Regression (ftcd_score, NMR). \########### den ecw tipota allo koino####moderators den ecw katholou
 
 ```{r}
 # Create a table with coefficients from Logistic, Lasso, Best Subset Selection
@@ -677,6 +670,42 @@ kable(combined_df, row.names = FALSE,
       caption = "Summary of Coefficients across 3 Selection Methods (for Moderators)")
 
 ```
+
+The plots below provide a comprehensive comparison of three model selection methods — Lasso, Stepwise, and Best Subset — in predicting smoking abstinence. 
+
+### Calibration Plots (Left Column)
+
+#### Lasso Model
+The calibration plot shows that the Lasso model’s predicted probabilities generally align with the observed smoking abstinence rates, but there is noticeable variability, especially at higher probability estimates. The model tends to slightly underpredict abstinence at lower probabilities and demonstrates a wider spread of actual values as probabilities increase.
+
+#### Stepwise Model
+This model’s calibration plot shows a pretty good alignment with the ideal calibration line, suggesting that it produces probability estimates that can reflect actual abstinence outcomes across most probability ranges. The error bars indicate stable estimates with less variability, making the Stepwise model the most reliable in terms of calibration.
+
+#### Best Subset Model
+The calibration plot for the Best Subset model reveals a greater discrepancy from the ideal line and wider error bars compared to the other models. This model demonstrates higher variability and less reliable probability estimates, particularly at the extreme ends of the probability range.
+
+### LOESS-Smoothing Calibration Curves (Middle Column)
+
+#### Lasso Model
+The LOESS curve for the Lasso model shows underprediction of abstinence at lower probabilities, with the curve staying below the ideal line at the low end. The model’s predictions improve slightly as probabilities increase but still demonstrate some deviation, indicating inconsistencies in predicted abstinence probability across ranges.
+
+#### Stepwise Model
+The Stepwise model’s LOESS curve stays close to the ideal line, suggesting a high degree of calibration accuracy. The curve remains close to the 45-degree line across the range of probabilities, indicating that predicted probabilities are well-calibrated and reflective of actual abstinence outcomes.
+
+#### Best Subset Model
+The LOESS curve for the Best Subset model deviates from the ideal line, particularly at the lower and upper probability ranges, suggesting substantial miscalibration. The curve shows greater fluctuations, indicating that the model’s predictions are not consistent with observed abstinence probabilities.
+
+
+### ROC Curves (Right Column)
+
+#### Lasso Model
+The ROC curve for the Lasso model yields an AUC of 0.74, indicating that this model has the best discrimination ability among the three models. It suggests that the Lasso model can effectively distinguish between abstinent and non-abstinent individuals.
+
+#### Stepwise Model
+The Stepwise model’s ROC curve has an AUC of 0.73, very close to the Lasso model. While slightly lower, this AUC still represents good discrimination, indicating that the Stepwise model can differentiate between abstinent and non-abstinent cases with reasonable accuracy.
+
+#### Best Subset Model
+The Best Subset model has an AUC of 0.71, the lowest among the three models. This suggests that it has the weakest discrimination capability, potentially leading to more misclassification of abstinence status.
 
 ```{r}
 # Roc/Auc
