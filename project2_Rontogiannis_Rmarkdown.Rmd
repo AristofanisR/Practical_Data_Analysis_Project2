@@ -27,6 +27,12 @@ link-citations: yes
 
 # Introduction
 
+This project is a collaboration with Dr. George Papandonatos from the Department of Biostatistics at Brown University. This project examines the effectiveness of smoking cessation treatments for adults with major depressive disorder (MDD), a group that encounters unique challenges when trying to quit smoking. People with MDD often smoke more heavily, have a stronger dependence on nicotine, and face more intense withdrawal symptoms than those without MDD. While varenicline, a medication for quitting smoking, has shown promising results, psychological approaches that address depression-related issues, like behavioral activation (BA), might further enhance quit rates for this group.
+
+This project uses data from a randomized, placebo-controlled study that compared behavioral activation with standard treatment (ST), both combined with either varenicline or a placebo. The study allows us to explore how baseline characteristics may affect treatment success at the end of treatment (EOT), including 300 adult smokers who have current or past MDD. Specifically, we aim to identify baseline factors that may influence the effectiveness of behavioral treatments and predict abstinence, considering both behavioral and medication-based therapies.
+
+The findings from this research could lead to more effective, personalized smoking cessation strategies for people with MDD, addressing their specific challenges and improving treatment outcomes.
+
 @hitsman2023efficacy
 
 ```{r setup, include = FALSE}
@@ -58,6 +64,24 @@ library(VIM)
 library(mice)
 library(leaps)
 ```
+
+# Data Processing
+
+The dataset for this project \##############
+
+A race variable was created to represent participants’ racial or ethnic background. Based on three indicators—Non-Hispanic White (NHW), Black, and Hispanic—participants were categorized as "Non-Hispanic White," "Black," "Hispanic," or "Other". Additionally, a variable representing the treatment categories was generated to classify participants into four treatment groups: behavioral activation with placebo (BASC+placebo), standard treatment with placebo (ST+placebo), behavioral activation with varenicline (BASC+varenicline), and standard treatment with varenicline (ST+varenicline).
+
+To ensure consistency, categorical variables such as sex and education level were converted to factor types, while continuous variables remained numeric. This type adjustment was necessary to facilitate subsequent analysis and ensure that each variable was in the appropriate format.
+
+Participant characteristics were summarized by treatment group in three primary areas: demographics, smoking characteristics, and psychiatric characteristics.
+
+In the demographics section, participant variables such as age, sex, race, income, and education level were included. Age was summarized as a continuous variable using mean and standard deviation, while categorical variables like sex, race, income, and education level were presented with counts and percentages for each treatment group. This section provides an overview of the baseline demographic distribution across the four treatment conditions.
+
+Smoking-related characteristics were summarized to include baseline measures of cigarette consumption, such as cigarettes per day, FTCD score, and readiness to quit smoking. Continuous variables like cigarettes per day and FTCD score were summarized with mean and standard deviation, while categorical variables, such as whether participants smoked within five minutes of waking up, were presented with counts and percentages. This section helps illustrate smoking behaviors across the different treatment groups.
+
+Psychiatric characteristics were also summarized to capture information related to mental health, such as anhedonia (measured by the SHAPS score), presence of other DSM-5 diagnoses, use of antidepressant medication, and current versus past MDD status. Continuous variables, like the SHAPS score, were summarized by mean and standard deviation, while categorical variables, like the presence of other DSM-5 diagnoses, were displayed with counts and percentages. This section highlights the psychiatric characteristics of participants across treatment groups.
+
+The three summary tables—demographics, smoking characteristics, and psychiatric characteristics—were combined into a final table (Table 1) that provides an overall snapshot of participant characteristics by treatment group and by overall sample. This table is organized to present a clear and comprehensive view of the data, allowing for straightforward comparisons across treatment groups and providing context for further analyses on treatment outcomes.
 
 ```{r}
 #Read main data set 
@@ -100,6 +124,7 @@ data = data  %>%
 
 ```
 
+````{=tex}
 \newpage
 \begin{landscape}
 ```{r}
@@ -265,6 +290,11 @@ final_table
 ```
 \end{landscape}
 \newpage
+````
+
+Additionally, to facilitate certain analyses, a new variable was created to consolidate education levels. The three lower levels of education (Grade school, Some high school and high school graduate or GED) were combined into a single category representing lower education levels. This aggregation simplifies the education variable, as those three levels contained a small amount of participants, allowing for broader categorical comparisons while retaining essential information on educational background.
+
+The missing data analysis involves examining the extent of missingness across variables in the dataset. A summary table was generated (Table 2), listing variables with missing values, the count of missing entries for each variable, and the corresponding percentage relative to the total sample size. For example, the variable with the highest missingness is the NMR (7%), followed by the variables crv_total_pq1 (6%) and readiness (5.67%). Variables with no missing values were excluded from this table for clarity. This missingness analysis is a critical step in data preparation, as it helps to address data quality issues and ensure that the dataset is ready for further statistical modeling and interpretation. The total percentage of missingness was around 20%. If we delete all the rows with missing data we might lose a significant portion of our dataset, which could reduce the statistical power of our analyses and lead to biased estimates. 
 
 
 ```{r}
@@ -302,7 +332,6 @@ missing_summary %>%
         of Missing Values")
 ```
 
-
 ```{r}
 # Create a new variable that contains the 3 first levels of edu
 data <- data %>%
@@ -315,8 +344,15 @@ data <- data %>%
 
 ```
 
+
+To handle missing data, the Multiple Imputation by Chained Equations (MICE) method was applied. MICE is an iterative process that generates multiple plausible datasets by imputing missing values based on the observed data structure. Here, we used predictive mean matching (PMM) as the imputation method. PMM is advantageous as it imputes realistic values by using observed values from other participants with similar predictive values.
+
+################In this process, we generated five imputed datasets (m = 5), with a maximum of 50 iterations per imputation to ensure convergence. After completing the imputations, we selected the fourth imputed dataset (action = 4) to proceed with further analysis. This approach allows us to account for the uncertainty in imputed values while maintaining dataset integrity for reliable downstream analyses.######## borei na kanw mean and mode
+
+
+
 ```{r}
-# Second Method: MICE 
+# MICE 
 # Perform MICE imputation
 data_mice <- mice(data, m = 5
                   , method = "pmm", maxit = 50, seed = 58, printFlag= FALSE)
@@ -324,6 +360,13 @@ data_mice <- mice(data, m = 5
 # Complete the data by extracting one of the imputed datasets
 data_mice <- complete(data_mice, action = 4)
 ```
+
+As part of the Explanatory Data Analysis, we want to examine the relationship between menthol cigarette use and race. We created a contingency table to display the frequencies of menthol and non-menthol use across racial categories, and then performed a Chi-square test to assess whether there is a statistically significant association between race and menthol cigarette use.
+
+The Chi-square test produced a very low p-value, indicating a statistically significant association between race and menthol cigarette use. This result suggests that menthol cigarette usage depends on race, as there appears to be a notable relationship between the two variables.
+
+We can easily observe from Table 3 that Black individuals have a preference for menthol cigarettes over regular non-menthol ones (130 out of 157 people).
+
 
 ```{r}
 # Check the relationship between Menthol Cigarettes and Race
@@ -348,6 +391,13 @@ kable(table_race_menthol,
 ```
 
 # Data Analysis
+
+
+In this part of the analysis, we implemented a Lasso regression to identify potential moderators of the treatment effects on smoking abstinence. By using Lasso, we aim to reduce the model to a subset of variables and interaction terms that are most predictive of the outcome. Lasso is particularly useful here as it performs variable selection by penalizing the coefficients of less relevant variables, ultimately setting them to zero, which leads to a more interpretable model.
+
+To ensure that the variables Var and BA are kept controlled in the model, we set a zero penalty for them (those variables are crucial for investigating treatment interactions and their effect on abstinence). We also added interaction terms for treatment and baseline variables to explore whether the effect of treatment varies based on baseline characteristics.
+
+The final model coefficients at the optimal lambda (chosen through cross-validation) include only those variables and interactions with non-zero coefficients, which are presented in the resulting table (Table 4). This selection helps identify significant moderators of smoking abstinence while maintaining a simpler model.
 
 ```{r}
 # Modeling Preprocessing
@@ -471,6 +521,11 @@ result_table_lasso <- data.frame(
 
 ```
 
+
+
+
+
+
 ```{r}
 # Logistic regression
 
@@ -544,8 +599,6 @@ logistic_model <- step(
 #summary(logistic_model)
 ```
 
-
-
 ```{r}
 # Best subset selection
 
@@ -565,7 +618,6 @@ cp_min = which.min(best_subset_summary$cp) # min is 10
 best_subset_coefs = coef(best_subset_model, cp_min)
 best_subset_names = names(coef(best_subset_model, cp_min))
 ```
-
 
 ```{r}
 # Create a table with coefficients from Logistic, Lasso, Best Subset Selection
@@ -609,7 +661,6 @@ kable(combined_df, row.names = FALSE,
 
 ```
 
-
 ```{r}
 # Roc/Auc
 predicted_prob_lasso <- predict(lasso_model,
@@ -647,7 +698,6 @@ ROC_lasso = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
   theme(plot.title = element_text(hjust = 0.5), 
         plot.subtitle = element_text(hjust = 0.5))
 ```
-
 
 ```{r, fig.width = 12, fig.height = 4}
 # Calibration Plots
@@ -702,7 +752,6 @@ calib_loess_lasso = ggplot(calib_data, aes(x = predicted, y = observed)) +
   theme(plot.title = element_text(hjust = 0.5))
 ```
 
-
 ```{r}
 # ROC/AUC
 predicted_prob_logistic <- predict(logistic_model,
@@ -739,7 +788,6 @@ ROC_step = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
   theme(plot.title = element_text(hjust = 0.5),
         plot.subtitle = element_text(hjust = 0.5))
 ```
-
 
 ```{r, fig.width = 12, fig.height = 4}
 # Calibration Plots
@@ -845,7 +893,6 @@ ROC_best_subset = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
         plot.subtitle = element_text(hjust = 0.5))
 ```
 
-
 ```{r, fig.width = 12, fig.height = 4}
 # Calibration plots
 num_cuts <- 10  # Number of bins for calibration
@@ -938,9 +985,6 @@ grid.arrange(
 )
 ```
 
-
-
-
 ```{r}
 ### Second objective - Predictors
 
@@ -1006,7 +1050,6 @@ pred_result_table_lasso <- data.frame(
   filter(Coefficient != 0)
 ```
 
-
 ```{r}
 # Logistic Regression
 
@@ -1029,7 +1072,6 @@ predictor_logistic_model <- step(
 )
 ```
 
-
 ```{r}
 # Best subset selection
 
@@ -1049,8 +1091,6 @@ cp_min = which.min(best_subset_summary$cp) # min is 10
 pred_best_subset_coefs = coef(best_subset_model_pred, cp_min)
 best_subset_names_pred = names(coef(best_subset_model_pred, cp_min))
 ```
-
-
 
 ```{r}
 # Create a table with coefficients from Logistic, Lasso, Best Subset Selection
@@ -1094,19 +1134,13 @@ kable(combined_df, row.names = F,
       caption = "Summary of Coefficients across 3 Selection Methods (for Predictors)")
 ```
 
-
-
-
-
-
-
 # Results
 
 # Conclusions and Limitations
 
 # Data Privacy and Code Availability
 
-The analysis dataset was obtained from..... The replication code can be found at <https://github.com/AristofanisR/Practical_Data_Analysis_Project2>
+The analysis dataset was obtained by Dr. George Papandonatos from the Department of Biostatistics at Brown University. The replication code can be found at <https://github.com/AristofanisR/Practical_Data_Analysis_Project2>
 
 \newpage
 
