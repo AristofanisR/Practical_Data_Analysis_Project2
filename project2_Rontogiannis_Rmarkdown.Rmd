@@ -673,39 +673,30 @@ kable(combined_df, row.names = FALSE,
 
 The plots below provide a comprehensive comparison of three model selection methods — Lasso, Stepwise, and Best Subset — in predicting smoking abstinence. 
 
-### Calibration Plots (Left Column)
+### Calibration Plots (Left Panel)
 
-#### Lasso Model
-The calibration plot shows that the Lasso model’s predicted probabilities generally align with the observed smoking abstinence rates, but there is noticeable variability, especially at higher probability estimates. The model tends to slightly underpredict abstinence at lower probabilities and demonstrates a wider spread of actual values as probabilities increase.
+**Lasso Model** The calibration plot shows that the Lasso model’s predicted probabilities generally align with the observed smoking abstinence rates, but there is noticeable variability, especially at higher probability estimates. The model tends to slightly underpredict abstinence at lower probabilities and demonstrates a wider spread of actual values as probabilities increase.
 
-#### Stepwise Model
-This model’s calibration plot shows a pretty good alignment with the ideal calibration line, suggesting that it produces probability estimates that can reflect actual abstinence outcomes across most probability ranges. The error bars indicate stable estimates with less variability, making the Stepwise model the most reliable in terms of calibration.
+**Stepwise Model** This model’s calibration plot shows a pretty good alignment with the ideal calibration line, suggesting that it produces probability estimates that can reflect actual abstinence outcomes across most probability ranges. The error bars indicate stable estimates with less variability, making the Stepwise model the most reliable in terms of calibration.
 
-#### Best Subset Model
-The calibration plot for the Best Subset model reveals a greater discrepancy from the ideal line and wider error bars compared to the other models. This model demonstrates higher variability and less reliable probability estimates, particularly at the extreme ends of the probability range.
+**Best Subset Model** The calibration plot for the Best Subset model reveals a greater discrepancy from the ideal line and wider error bars compared to the other models. This model demonstrates higher variability and less reliable probability estimates, particularly at the extreme ends of the probability range.
 
-### LOESS-Smoothing Calibration Curves (Middle Column)
+### LOESS-Smoothing Calibration Curves (Middle Panel)
 
-#### Lasso Model
-The LOESS curve for the Lasso model shows underprediction of abstinence at lower probabilities, with the curve staying below the ideal line at the low end. The model’s predictions improve slightly as probabilities increase but still demonstrate some deviation, indicating inconsistencies in predicted abstinence probability across ranges.
+**Lasso Model** The LOESS curve for the Lasso model shows underprediction of abstinence at lower probabilities, with the curve staying below the ideal line at the low end. The model’s predictions improve slightly as probabilities increase but still demonstrate some deviation, indicating inconsistencies in predicted abstinence probability across ranges.
 
-#### Stepwise Model
-The Stepwise model’s LOESS curve stays close to the ideal line, suggesting a high degree of calibration accuracy. The curve remains close to the 45-degree line across the range of probabilities, indicating that predicted probabilities are well-calibrated and reflective of actual abstinence outcomes.
+**Stepwise Model** The Stepwise model’s LOESS curve stays close to the ideal line, suggesting a high degree of calibration accuracy. The curve remains close to the 45-degree line across the range of probabilities, indicating that predicted probabilities are well-calibrated and reflective of actual abstinence outcomes.
 
-#### Best Subset Model
-The LOESS curve for the Best Subset model deviates from the ideal line, particularly at the lower and upper probability ranges, suggesting substantial miscalibration. The curve shows greater fluctuations, indicating that the model’s predictions are not consistent with observed abstinence probabilities.
+**Best Subset Model** The LOESS curve for the Best Subset model deviates from the ideal line, particularly at the lower and upper probability ranges, suggesting substantial miscalibration. The curve shows greater fluctuations, indicating that the model’s predictions are not consistent with observed abstinence probabilities.
 
 
-### ROC Curves (Right Column)
+### ROC Curves (Right Panel)
 
-#### Lasso Model
-The ROC curve for the Lasso model yields an AUC of 0.74, indicating that this model has the best discrimination ability among the three models. It suggests that the Lasso model can effectively distinguish between abstinent and non-abstinent individuals.
+**Lasso Model** The ROC curve for the Lasso model yields an AUC of 0.74, indicating that this model has the best discrimination ability among the three models. It suggests that the Lasso model can effectively distinguish between abstinent and non-abstinent individuals.
 
-#### Stepwise Model
-The Stepwise model’s ROC curve has an AUC of 0.73, very close to the Lasso model. While slightly lower, this AUC still represents good discrimination, indicating that the Stepwise model can differentiate between abstinent and non-abstinent cases with reasonable accuracy.
+**Stepwise Model** The Stepwise model’s ROC curve has an AUC of 0.73, very close to the Lasso model. While slightly lower, this AUC still represents good discrimination, indicating that the Stepwise model can differentiate between abstinent and non-abstinent cases with reasonable accuracy.
 
-#### Best Subset Model
-The Best Subset model has an AUC of 0.71, the lowest among the three models. This suggests that it has the weakest discrimination capability, potentially leading to more misclassification of abstinence status.
+**Best Subset Model** The Best Subset model has an AUC of 0.71, the lowest among the three models. This suggests that it has the weakest discrimination capability, potentially leading to more misclassification of abstinence status.
 
 ```{r}
 # Roc/Auc
