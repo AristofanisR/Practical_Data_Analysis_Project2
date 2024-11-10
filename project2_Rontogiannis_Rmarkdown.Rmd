@@ -392,12 +392,18 @@ kable(table_race_menthol,
 
 # Data Analysis
 
-
+## Lasso Regression
 In this part of the analysis, we implemented a Lasso regression to identify potential moderators of the treatment effects on smoking abstinence. By using Lasso, we aim to reduce the model to a subset of variables and interaction terms that are most predictive of the outcome. Lasso is particularly useful here as it performs variable selection by penalizing the coefficients of less relevant variables, ultimately setting them to zero, which leads to a more interpretable model.
 
 To ensure that the variables Var and BA are kept controlled in the model, we set a zero penalty for them (those variables are crucial for investigating treatment interactions and their effect on abstinence). We also added interaction terms for treatment and baseline variables to explore whether the effect of treatment varies based on baseline characteristics.
 
-The final model coefficients at the optimal lambda (chosen through cross-validation) include only those variables and interactions with non-zero coefficients, which are presented in the resulting table (Table 4). This selection helps identify significant moderators of smoking abstinence while maintaining a simpler model.
+To assess the model's performance and ensure its generalizability, we divided the data into training and test sets, with 70% of the observations assigned to the training set and 30% to the test set. This split allows us to train the model on one portion of the data and then evaluate its performance on a separate, unseen portion, reducing the risk of overfitting.
+
+The training set was used to build the Lasso model, optimizing the selection of variables and interactions by identifying the subset that most effectively predicts smoking abstinence. Cross-validation on the training data determined the best penalty parameter (lambda), balancing the trade-off between model complexity and predictive accuracy.
+
+After training the model, we will evaluate it on the test set, providing an unbiased assessment of how well the selected variables and interactions generalize to new data. This approach ensures that the model is robust and capable of making reliable predictions beyond the original dataset.
+
+The final model coefficients at the optimal lambda include only those variables and interactions with non-zero coefficients, which are presented in the resulting table (Table 4). This selection helps identify significant moderators of smoking abstinence while maintaining a simpler model.
 
 ```{r}
 # Modeling Preprocessing
@@ -523,9 +529,13 @@ result_table_lasso <- data.frame(
 
 
 
+## Stepwise Logistic Regression
 
+Furthermore, we performed stepwise logistic regression to determine the optimal combination of variables and interaction terms for predicting smoking abstinence. The process starts by defining both the outcome variable and a set of moderator and predictor variables. Specifically, the outcome variable  represents abstinence, and a set of relevant predictor variables is selected from our dataset based on their potential influence on the outcome. These predictors include demographic information, baseline characteristics, and other relevant factors. The model is built to include both main effects (the predictors' direct effects on abstinence) and potential interaction terms. The main effects include the variables Var and BA, that should be controlled in all models. We also used additional predictors like age, gender, income, education level, race, and other baseline measures. Additionally, a set of interaction terms is specified, particularly those involving BA and Var, to explore moderation effects. These interaction terms allow the model to capture relationships where the effect of one predictor on abstinence might depend on the level of another predictor, adding a layer of complexity to the model.
 
+Using the step function, the model undergoes stepwise logistic regression, which involves both forward and backward selection to find the most effective model. This approach adds or removes predictors and interactions iteratively, aiming to optimize the model based on the Akaike Information Criterion (AIC).
 
+To sum up, this stepwise approach optimizes the logistic regression model by keeping the most relevant predictors and discarding those that do not improve the model’s performance, leading to an efficient and interpretable model for predicting smoking abstinence.
 ```{r}
 # Logistic regression
 
@@ -594,12 +604,17 @@ logistic_model <- step(
   direction = "both",
   trace=0
 )
-
-# Display the summary of the final model
-#summary(logistic_model)
 ```
 
-```{r}
+## Best Subset Selection
+
+Lastly, we performed best subset selection to identify the most predictive set of variables for smoking abstinence. We used sequential replacement (it was not possible to use every possible combination of variables - exhausted replacement - as the number of interactions can be over a million) to find the one that best explains the outcome with a balance between predictive power and model complexity.
+
+The selection process started with defining the outcome variable and predictor variables in the training dataset. Then we examined subsets of the predictors, looking for the best combination based on specific criteria. Here, Var1 and BA1 are forced into the model, meaning these terms will always be included in the subset selection process due to their importance as main effects. After that, we identified the subset with the minimum Mallows’ $Cp$ statistic, which is often used to select a model with good fit while avoiding overfitting.
+
+In essence, this approach evaluates possible subsets of predictors and selects the combination with the lowest $Cp$, yielding a model that is both predictive and efficient for determining smoking abstinence.
+
+```{r, results= 'hide'}
 # Best subset selection
 
 # Run best subset selection with regsubsets
@@ -618,6 +633,8 @@ cp_min = which.min(best_subset_summary$cp) # min is 10
 best_subset_coefs = coef(best_subset_model, cp_min)
 best_subset_names = names(coef(best_subset_model, cp_min))
 ```
+
+Table 4 compares the coefficients of variables selected by the three different modeling approaches: logistic regression with stepwise selection, Lasso regression, and best subset selection. This combined table allows for easy comparison of the variables deemed most predictive across these methods and their respective coefficients. 
 
 ```{r}
 # Create a table with coefficients from Logistic, Lasso, Best Subset Selection
