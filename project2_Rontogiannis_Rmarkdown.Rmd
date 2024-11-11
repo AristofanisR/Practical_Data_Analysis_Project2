@@ -67,11 +67,12 @@ library(ggplot2)
 library(ggmosaic)
 library(ggbeeswarm)
 library(ggdist)
+library(cowplot)
 ```
 
 # Data Processing
 
-The dataset for this project \##############
+The dataset for this project #############
 
 A race variable was created to represent participants’ racial or ethnic background. Based on three indicators—Non-Hispanic White (NHW), Black, and Hispanic—participants were categorized as "Non-Hispanic White," "Black," "Hispanic," or "Other". Additionally, a variable representing the treatment categories was generated to classify participants into four treatment groups: behavioral activation with placebo (BASC+placebo), standard treatment with placebo (ST+placebo), behavioral activation with varenicline (BASC+varenicline), and standard treatment with varenicline (ST+varenicline).
 
@@ -345,8 +346,6 @@ data <- data %>%
 
 To handle missing data, the Multiple Imputation by Chained Equations (MICE) method was applied. MICE is an iterative process that generates multiple plausible datasets by imputing missing values based on the observed data structure. Here, we used predictive mean matching (PMM) as the imputation method. PMM is advantageous as it imputes realistic values by using observed values from other participants with similar predictive values.
 
-################In this process, we generated five imputed datasets (m = 5), with a maximum of 50 iterations per imputation to ensure convergence. After completing the imputations, we selected the fourth imputed dataset (action = 4) to proceed with further analysis. This approach allows us to account for the uncertainty in imputed values while maintaining dataset integrity for reliable downstream analyses.######## borei na kanw mean and mode
-
 ```{r}
 # MICE 
 # Perform MICE imputation
@@ -386,16 +385,25 @@ kable(table_race_menthol,
 
 ```
 
-```{r}
+
+Additionally, we examine the relationships between education, income, race, and FTCD scores through mosaic and raincloud plots.
+
+**Mosaic Plot between Education and Income** This plot shows the distribution of education levels (edu_merged) across different income categories. We observe a gradient where higher education levels (coded in pink) tend to be associated with higher income levels, while lower education levels (in blue) were more concentrated in lower income brackets. This suggests a positive association between education and income.
+
+**Mosaic Plot between Education and Race** This plot reveals the distribution of education levels across different racial groups. The distribution varies, with Non-Hispanic Whites showing a relatively higher proportion in the higher education categories, while other groups, such as Black and Hispanic, have a more balanced spread across the education levels. This pattern may indicate disparities in educational attainment across racial groups.
+
+**Raincloud Plot for FTCD Score by Race** The raincloud plot shows the distribution and density of FTCD scores across racial groups. Non-Hispanic Whites have the highest density around higher FTCD scores, while other groups show a more varied distribution, with Hispanics and Black participants displaying lower scores overall. This visualization highlights potential differences in FTCD scores among racial groups, which may correlate with other socioeconomic factors.
+
+```{r,fig.width = 8, fig.height = 4, out.width = "80%", fig.align = "center"}
 # Mosaic between education, income
-vcd::mosaic(~ inc + edu_merged, data = data_mice, shade = TRUE, legend = TRUE, labeling = labeling_values) 
+# mosaic = vcd::mosaic(~ inc + edu_merged, data = data_mice, shade = TRUE, 
+#                      legend = TRUE, labeling = labeling_values) 
 
-
-# Heatmap between race, education
-ggplot(data = data_mice) +
-  geom_mosaic(aes(weight = 1, x = product(race), fill = edu_merged)) +
+# Heatmap between education, income
+heatmap1 = ggplot(data = data_mice) +
+  geom_mosaic(aes(weight = 1, x = product(inc), fill = edu_merged)) +
   labs(
-    title = "Mosaic Plot between Education and Income",
+    title = "           Mosaic Plot between Education and Income",
     x = "Income",
     y = "Education"
   ) +
@@ -407,19 +415,36 @@ ggplot(data = data_mice) +
     plot.title = element_text(hjust = 0.5)
   )
 
-# Beeswarm plot between Sex, NMR
-ggplot(data_mice, aes(x = sex_ps, y = NMR, color = sex_ps)) +
-  geom_beeswarm(size = 2, alpha = 0.7) +
-  labs(x = "Sex", y = "NMR", title = "Beeswarm Plot") +
+# Heatmap between race, education
+heatmap2 = ggplot(data = data_mice) +
+  geom_mosaic(aes(weight = 1, x = product(race), fill = edu_merged)) +
+  labs(
+    title = "Mosaic Plot between Education and Race",
+    x = "Race",
+    y = "Education"
+  ) +
+  scale_fill_manual(values = c("slateblue3", "grey", "palevioletred")) + 
   theme_minimal() +
-  theme(legend.position = "none") +
-  scale_fill_manual(values = c("slateblue3", "palevioletred"))
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(angle = 0, hjust = 1),
+    plot.title = element_text(hjust = 0.5)
+  )
+
+# Beeswarm plot between Sex, NMR
+#beeswarm = ggplot(data_mice, aes(x = sex_ps, y = NMR, color = sex_ps)) +
+ # geom_beeswarm(size = 2, alpha = 0.7) +
+  #labs(x = "Sex", y = "NMR", title = "Beeswarm Plot") +
+  #theme_minimal() +
+  #theme(legend.position = "none") +
+  #scale_color_manual(values = c("slateblue3", "palevioletred"))
 
 
 
 # Raincloud plot between edu, income
-ggplot(data_mice, aes(x = race, y = ftcd_score, fill = race)) +
-  ggdist::stat_halfeye(adjust = 0.5, width = 0.6, .width = 0, justification = -0.2, point_colour = NA) +
+raincloud = ggplot(data_mice, aes(x = race, y = ftcd_score, fill = race)) +
+  ggdist::stat_halfeye(adjust = 0.5, width = 0.6, .width = 0, 
+                       justification = -0.2, point_colour = NA) +
   geom_boxplot(width = 0.1, outlier.shape = NA, alpha = 0.5) +
   geom_jitter(width = 0.1, alpha = 0.4) +
   coord_flip() +  # Flip coordinates for a horizontal layout
@@ -428,9 +453,20 @@ ggplot(data_mice, aes(x = race, y = ftcd_score, fill = race)) +
   scale_fill_manual(values = c("mediumblue","slateblue3", "grey", "palevioletred"))
 
 
+combined_plot <- plot_grid(heatmap1, heatmap2, ncol = 2, align = "hv")
+combined_plot
 
+#combined_plot <- grid.arrange(mosaic, heatmap, beeswarm, raincloud, ncol = 2)
+#combined_plot
+#par(mfrow= c(2,2))
+#mosaic
 
 ```
+
+```{r,fig.width = 8, fig.height = 4, out.width = "80%", fig.align = "center"}
+raincloud
+```
+
 
 # Data Analysis
 
@@ -765,7 +801,8 @@ full_df = left_join(combined_df, combined_or_df, by = "Variables")
 kable(full_df, row.names = FALSE, 
       col.names = c("Variables","Lasso", "Stepwise", "Best Subset", 
                      "Lasso OR", "Stepwise OR", "Best Subset OR"),
-        caption = "Summary of Coefficients and Odds Ratios across 3 Selection Methods (for Moderators)") 
+      caption = "Summary of Coefficients and Odds Ratios across 3 Sel
+ection Methods (for Moderators)") 
 ```
 
 
@@ -820,7 +857,7 @@ auc_value <- auc(roc_obj)
 
 # Plot ROC curve with ggplot2
 ROC_lasso = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
-  geom_line(color = "mediumpurple2", size = 1) +
+  geom_line(color = "slateblue3", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
   annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", 
   round(auc_value, 2)), 
@@ -877,7 +914,7 @@ calib_data <- calib_data %>%
 
 calib_loess_lasso = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
-  geom_line(aes(y = loess_pred), color = "mediumpurple2", linetype = "dashed") +  
+  geom_line(aes(y = loess_pred), color = "slateblue3", linetype = "dashed") +  
   geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), 
               alpha = 0.2, fill = "grey") +
   geom_abline(intercept = 0, slope = 1, color = "red") + # Perfect calibration line
@@ -911,7 +948,7 @@ auc_value <- auc(roc_obj)
 
 # Plot ROC curve with ggplot2
 ROC_step = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
-  geom_line(color = "mediumpurple2", size = 1) +
+  geom_line(color = "slateblue3", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
   annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", 
                                                    round(auc_value, 2)), 
@@ -967,7 +1004,7 @@ calib_data <- calib_data %>%
 
 calib_loess_step = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
-  geom_line(aes(y = loess_pred), color = "mediumpurple2", linetype = "dashed") +  
+  geom_line(aes(y = loess_pred), color = "slateblue3", linetype = "dashed") +  
   geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), 
               alpha = 0.2,
               fill = "grey") +
@@ -1015,7 +1052,7 @@ auc_value <- auc(roc_obj)
 
 # Plot ROC curve with ggplot2
 ROC_best_subset = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
-  geom_line(color = "mediumpurple2", size = 1) +
+  geom_line(color = "slateblue3", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
   annotate("text", x = 0.8, y = 0.2,
            label = paste("AUC =", round(auc_value, 2)), size = 5, color = "Black") +
@@ -1071,7 +1108,7 @@ calib_data <- calib_data %>%
 
 calib_loess_bss = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
-  geom_line(aes(y = loess_pred), color = "mediumpurple2", linetype = "dashed") +  
+  geom_line(aes(y = loess_pred), color = "slateblue3", linetype = "dashed") +  
   geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), alpha = 0.2, fill = "grey") +
   geom_abline(intercept = 0, slope = 1, color = "red") +  # Perfect calibration line
   labs(x = "Predicted Probability of Smoking Abstinence",
@@ -1305,7 +1342,8 @@ full_df = left_join(combined_df, combined_or_df, by = "Variables")
 kable(full_df, row.names = FALSE, 
       col.names = c("Variables","Lasso", "Stepwise", "Best Subset",
                      "Lasso OR", "Stepwise OR", "Best Subset OR"),
-        caption = "Summary of Coefficients and Odds Ratios across 3 Selection Methods (for Predictors)") 
+      caption = "Summary of Coefficients and Odds Ratios across 3 
+Selection Methods (for Predictors)") 
 
 ```
 
@@ -1316,7 +1354,7 @@ kable(full_df, row.names = FALSE,
 
 # Data Privacy and Code Availability
 
-The analysis dataset was obtained by Dr. George Papandonatos from the Department of Biostatistics at Brown University. The replication code can be found at <https://github.com/AristofanisR/Practical_Data_Analysis_Project2>
+The analysis dataset was obtained by Dr. George Papandonatos from the Department of Biostatistics at Brown University and cannot be shared due to privacy. The replication code can be found at <https://github.com/AristofanisR/Practical_Data_Analysis_Project2>
 
 \newpage
 

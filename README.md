@@ -22,11 +22,11 @@
 
 **Data Manipulation and Transformation**: `dplyr`, `reshape2`
 
-**Plotting**: `ggplot2`, `patchwork`, `GGally`, `ggcorrplot`
+**Plotting**: `ggplot2`, `patchwork`, `GGally`, `ggcorrplot`, `cowplot`
 
 **Data Summary and Reporting**: `gtsummary`, `summarytools`
 
-**Data Analysis and Evaluation**: `glmnet`, `bestglm`, `pROC`
+**Data Analysis and Evaluation**: `glmnet`, `leaps`, `pROC`
 
 **String Manipulation**: `glue`
 
