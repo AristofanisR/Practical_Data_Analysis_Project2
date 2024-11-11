@@ -29,11 +29,10 @@ bibliography: References.bib
 
 This project is a collaboration with Dr. George Papandonatos from the Department of Biostatistics at Brown University. This project examines the effectiveness of smoking cessation treatments for adults with major depressive disorder (MDD), a group that encounters unique challenges when trying to quit smoking. People with MDD often smoke more heavily, have a stronger dependence on nicotine, and face more intense withdrawal symptoms than those without MDD. While varenicline, a medication for quitting smoking, has shown promising results, psychological approaches that address depression-related issues, like behavioral activation (BA), might further enhance quit rates for this group.
 
-This project uses data from a randomized, placebo-controlled study that compared behavioral activation with standard treatment (ST), both combined with either varenicline or a placebo. The study allows us to explore how baseline characteristics may affect treatment success at the end of treatment (EOT), including 300 adult smokers who have current or past MDD. Specifically, we aim to identify baseline factors that may influence the effectiveness of behavioral treatments and predict abstinence, considering both behavioral and medication-based therapies.
+This project uses data from a randomized, placebo-controlled study (@hitsman2023efficacy) that compared behavioral activation with standard treatment (ST), both combined with either varenicline or a placebo. The study allows us to explore how baseline characteristics may affect treatment success at the end of treatment (EOT), including 300 adult smokers who have current or past MDD. Specifically, we aim to identify baseline factors that may influence the effectiveness of behavioral treatments and predict abstinence, considering both behavioral and medication-based therapies.
 
 The findings from this research could lead to more effective, personalized smoking cessation strategies for people with MDD, addressing their specific challenges and improving treatment outcomes.
 
-@hitsman2023efficacy
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE,
@@ -56,7 +55,6 @@ library(gtsummary)
 library(gt)
 library(ggcorrplot)
 library(glmnet)
-library(bestglm)
 library(MASS)
 library(pROC)
 library(gridExtra)
@@ -70,7 +68,7 @@ library(ggdist)
 library(cowplot)
 ```
 
-# Data Processing
+# Data Overview
 
 The dataset for this project originates from a randomized control trial which explored the effect of pharmatherapy (Var) and behavioral activation on smoking cessation. The dataset consists of 300 adults with Major Depressive Disorder (MDD) and cigarette dependence. 
 
@@ -352,7 +350,7 @@ data_mice <- mice(data, m = 5
 data_mice <- complete(data_mice, action = 4)
 ```
 
-## EDA
+## Exploration of potential interactions
 As part of the Explanatory Data Analysis, we want to examine the relationship between menthol cigarette use and race. We created a contingency table to display the frequencies of menthol and non-menthol use across racial categories, and then performed a Chi-square test to assess whether there is a statistically significant association between race and menthol cigarette use.
 
 The Chi-square test produced a very low p-value, indicating a statistically significant association between race and menthol cigarette use. This result suggests that menthol cigarette usage depends on race, as there appears to be a notable relationship between the two variables.
@@ -464,15 +462,17 @@ raincloud
 ```
 
 
-# Data Analysis
+# Methods
+
+## Data separation and full model selection
+
+To assess the model's performance and ensure its generalizability, we divided the data into training and test sets, with 70% of the observations assigned to the training set and 30% to the test set. This split allows us to train the model on one portion of the data and then evaluate its performance on a separate, unseen portion, reducing the risk of overfitting.
+
+We ensured that the variables Var and BA are kept controlled in the model as those variables are crucial for investigating treatment interactions and their effect on abstinence. For objective one, we also added interaction terms between BA and baseline variables to explore potential moderator effects and other interaction terms, e.g., NMR:readiness and income:education, as reasonable covariates. For the second objective of this project, we considered baseline characteristics as potential predictors while keeping BA and Var controlled. Thus, for simplicity, no interaction terms were included in the full models.
 
 ## Lasso Regression
 
 In this part of the analysis, we implemented a Lasso regression to identify potential moderators of the treatment effects on smoking abstinence. By using Lasso, we aim to reduce the model to a subset of variables and interaction terms that are most predictive of the outcome. Lasso is particularly useful here as it performs variable selection by penalizing the coefficients of less relevant variables, ultimately setting them to zero, which leads to a more interpretable model.
-
-To ensure that the variables Var and BA are kept controlled in the model, we set a zero penalty for them (those variables are crucial for investigating treatment interactions and their effect on abstinence). We also added interaction terms for treatment and baseline variables to explore whether the effect of treatment varies based on baseline characteristics.
-
-To assess the model's performance and ensure its generalizability, we divided the data into training and test sets, with 70% of the observations assigned to the training set and 30% to the test set. This split allows us to train the model on one portion of the data and then evaluate its performance on a separate, unseen portion, reducing the risk of overfitting.
 
 The training set was used to build the Lasso model, optimizing the selection of variables and interactions by identifying the subset that most effectively predicts smoking abstinence. Cross-validation on the training data determined the best penalty parameter (lambda), balancing the trade-off between model complexity and predictive accuracy.
 
@@ -708,7 +708,7 @@ best_subset_coefs = coef(best_subset_model, cp_min)
 best_subset_names = names(coef(best_subset_model, cp_min))
 ```
 
-## Comparison between the three model selection methods
+# Results
 
 Table 4 compares the coefficients of variables selected by the three different modeling approaches and their corresponding Odds Ratios: logistic regression with stepwise selection, Lasso regression, and best subset selection. This combined table allows for easy comparison of the variables who are considered the most predictive across these methods and their respective coefficients.
 
@@ -1153,7 +1153,7 @@ grid.arrange(
 )
 ```
 
-For the second objective of this project, we considered baseline characteristics as potential predictors while keeping BA and Var controlled. Thus, for simplicity, no interaction terms were included in the full models. Overall, we followed similar analysis procedure as in objective one, but due to lower model complexity, we could employ exhaustive replacement in best subset selection. Table 5 compares the coefficients of variables selected by the three different modeling approaches and their corresponding ORs. On this approach, we observed that three variables (ftcd_score, mde_curr and NMR) were present in all three models. As previously discussed, FTCD score and NMR could be potentional predictors for predicting the outcome.
+Overall, we followed similar analysis procedure as in objective one, but due to lower model complexity, we could employ exhaustive replacement in best subset selection. Table 5 compares the coefficients of variables selected by the three different modeling approaches and their corresponding ORs. On this approach, we observed that three variables (ftcd_score, mde_curr and NMR) were present in all three models. As previously discussed, FTCD score and NMR could be potentional predictors for predicting the outcome.  Also, the OR of mde_curr is less than 1 in all three methods, meaning mde_curr has a similar behavior with ftcd_score. This means that participants with current MDD would have a lower success rate of smoking abstinence than those with past MDD. Finally, Var has a consistently >1 OR in all three methods used, while BA did not show a positive impact on abstinence, which is consistent with the findings from the original study (@hitsman2023efficacy).
 
 ```{r}
 ### Second objective - Predictors
@@ -1345,10 +1345,14 @@ Selection Methods (for Predictors)")
 
 ```
 
-
-# Results
-
 # Conclusions and Limitations
+
+This study underscores the potential benefits of tailored smoking cessation interventions for individuals with Major Depressive Disorder (MDD). Our analysis revealed that baseline characteristics, particularly FTCD score and Nicotine Metabolism Ratio (NMR), significantly impact abstinence outcomes. Higher nicotine dependence was associated with lower cessation success, while a higher NMR indicated a greater likelihood of quitting. These findings suggest that individualized treatments, incorporating both pharmacotherapy and behavioral strategies, may be more effective for this high-risk population.
+
+The use of multiple modeling approaches— Lasso, Stepwise Logistic Regression, and Best Subset Selection— allowed for a robust evaluation of predictive factors, capturing both common and unique predictors across methods. While Behavioral Activation and varenicline showed mixed effects on abstinence rates, variability in predictor selection highlights the complexity of predicting cessation success in individuals with MDD. This suggests that integrating insights from different models can help identify a broader range of influential factors, enhancing the personalization of treatment approaches.
+
+However, limitations of this study include a moderate sample size and reliance on self-reported smoking data, which may limit generalizability and introduce potential biases. Furthermore, the high number of interaction terms included in the full model for moderator effect exploration could introduce the issue of overfitting. Future research should expand on these findings by employing larger samples, objective measures of smoking, and long-term follow-up. Further exploration of additional predictors, such as genetic markers or psychiatric profiles, could provide deeper insights into treatment responses, ultimately guiding the development of optimized cessation strategies for those with MDD.
+
 
 # Data Privacy and Code Availability
 

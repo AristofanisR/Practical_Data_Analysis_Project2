@@ -20,14 +20,14 @@
 
 ## Dependancies
 
-**Data Manipulation and Transformation**: `dplyr`, `reshape2`
+**Data Manipulation and Transformation**: `dplyr`, `reshape2`, `tidyr`, `lubridate`
 
-**Plotting**: `ggplot2`, `patchwork`, `GGally`, `ggcorrplot`, `cowplot`
+**Data Visualization**: `ggplot2`, `patchwork`, `GGally`, `ggcorrplot`, `cowplot`, `ggmosaic`, `corrplot`, `ggbeeswarm`, `ggdist`, `grid`, `gridExtra`
 
-**Data Summary and Reporting**: `gtsummary`, `summarytools`
+**Data Summary and Reporting**: `gtsummary`, `summarytools`, `knitr`, `kableExtra`, `gtsummary`, `gt`
 
-**Data Analysis and Evaluation**: `glmnet`, `leaps`, `pROC`
+**Data Analysis and Evaluation**: `glmnet`, `leaps`, `pROC`, `MASS'
 
-**String Manipulation**: `glue`
+**Imputation and Missing Data Handling**: `MICE`
 
-**Date and Time Manipulation**: `lubridate`
+
