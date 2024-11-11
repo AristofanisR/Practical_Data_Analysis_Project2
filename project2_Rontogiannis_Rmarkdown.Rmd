@@ -1,6 +1,6 @@
 ---
 title: | 
- \textbf{Evaluating the Efficacy of Smoking Cessation Treatments in Adults with Major Depressive Disorder: A Comparative Analysis of Behavioral Interventions}
+ \textbf{Identifying Key Moderators and Predictors of Smoking Cessation in Adults with Major Depressive Disorder}
 
  \vspace{1cm} 
 subtitle: 
@@ -15,13 +15,13 @@ output:
 
 link-citations: yes
 abstract: |
-  **Purpose**: 
-  
-  **Methods**: 
-    
-  **Results**: 
+  **Purpose**: This project evaluates the efficacy of smoking cessation treatments among adults with Major Depressive Disorder (MDD), focusing on identifying baseline factors that moderate and predict treatment success. This analysis aims to clarify the role of both behavioral and pharmacological interventions, examining interactions between participant characteristics and treatment components.
 
-  **Conclusions**: 
+  **Methods**: Using data from a randomized, placebo-controlled trial, we assessed the effectiveness of Behavioral Activation (BA) and standard treatment (ST), each paired with either varenicline or a placebo, in supporting smoking cessation. Three statistical approaches—Lasso regression, stepwise logistic regression, and best subset selection—were employed to identify significant moderators and predictors of abstinence at the end of treatment, based on a sample of 300 adult smokers with current or past MDD.
+    
+  **Results**: The findings indicate that specific baseline characteristics, including FTCD score (a measure of nicotine dependence) and Nicotine Metabolism Ratio (NMR), significantly influence treatment outcomes. FTCD score was associated with lower abstinence rates, while a higher NMR was linked to greater likelihood of cessation. These predictors were consistently identified across models, suggesting a robust relationship between these factors and smoking cessation outcomes.
+
+  **Conclusions**: This study supports the need for tailored smoking cessation strategies for individuals with MDD, highlighting the potential of combining behavioral and pharmacological treatments based on individual characteristics. By identifying critical predictors and moderators, the findings provide a foundation for developing more personalized and effective cessation programs for this high-risk population.
 bibliography: References.bib
 ---
 
@@ -682,7 +682,7 @@ logistic_model <- step(
 
 ## Best Subset Selection
 
-Lastly, we performed best subset selection to identify the most predictive set of variables for smoking abstinence. We used sequential replacement (it was not possible to use every possible combination of variables - exhausted replacement - as the number of interactions can be over a million) to find the one that best explains the outcome with a balance between predictive power and model complexity.
+Lastly, we performed best subset selection to identify the most predictive set of variables for smoking abstinence. For the first objective, we used sequential replacement (it was not possible to use every possible combination of variables - exhausted replacement - as the number of interactions could be over a million) to find the one that best explains the outcome with a balance between predictive power and model complexity.
 
 The selection process started with defining the outcome variable and predictor variables in the training dataset. Then we examined subsets of the predictors, looking for the best combination based on specific criteria. Here, Var1 and BA1 are forced into the model, meaning these terms will always be included in the subset selection process due to their importance as main effects. After that, we identified the subset with the minimum Mallows’ $Cp$ statistic, which is often used to select a model with good fit while avoiding overfitting.
 
