@@ -63,6 +63,8 @@ library(gridExtra)
 library(VIM)
 library(mice)
 library(leaps)
+library(ggplot2)
+library(ggmosaic)
 ```
 
 # Data Processing
@@ -288,6 +290,8 @@ final_table
 
 Additionally, to facilitate certain analyses, a new variable was created to consolidate education levels. The three lower levels of education (Grade school, Some high school and high school graduate or GED) were combined into a single category representing lower education levels. This aggregation simplifies the education variable, as those three levels contained a small amount of participants, allowing for broader categorical comparisons while retaining essential information on educational background.
 
+## Data Missingness and Imputation
+
 The missing data analysis involves examining the extent of missingness across variables in the dataset. A summary table was generated (Table 2), listing variables with missing values, the count of missing entries for each variable, and the corresponding percentage relative to the total sample size. For example, the variable with the highest missingness is the NMR (7%), followed by the variables crv_total_pq1 (6%) and readiness (5.67%). Variables with no missing values were excluded from this table for clarity. This missingness analysis is a critical step in data preparation, as it helps to address data quality issues and ensure that the dataset is ready for further statistical modeling and interpretation. The total percentage of missingness was around 20%. If we delete all the rows with missing data we might lose a significant portion of our dataset, which could reduce the statistical power of our analyses and lead to biased estimates.
 
 ```{r}
@@ -351,6 +355,7 @@ data_mice <- mice(data, m = 5
 data_mice <- complete(data_mice, action = 4)
 ```
 
+## EDA
 As part of the Explanatory Data Analysis, we want to examine the relationship between menthol cigarette use and race. We created a contingency table to display the frequencies of menthol and non-menthol use across racial categories, and then performed a Chi-square test to assess whether there is a statistically significant association between race and menthol cigarette use.
 
 The Chi-square test produced a very low p-value, indicating a statistically significant association between race and menthol cigarette use. This result suggests that menthol cigarette usage depends on race, as there appears to be a notable relationship between the two variables.
@@ -376,6 +381,28 @@ kable(table_race_menthol,
       row.names = TRUE,
       format = "markdown")  %>%
   footnote(chi_square_test_note, footnote_as_chunk = FALSE)
+
+```
+
+```{r}
+# Mosaic between edu, income
+mosaic(~ inc + edu_merged, data = data_mice, 
+       shade = TRUE,           # Apply shading based on chi-squared statistic
+       legend = TRUE,         # Show a legend
+       labeling = labeling_values,   # Show frequencies on tiles
+       gp = gpar(fontsize = 12))  # Adjust the size of text labels
+
+
+# Plot between readiness, NMR
+
+
+# Mosaic between edu, income
+
+
+
+# Mosaic between edu, income
+
+
 
 ```
 
@@ -625,9 +652,9 @@ best_subset_names = names(coef(best_subset_model, cp_min))
 
 ## Comparison between the three model selection methods
 
-Table 4 compares the coefficients of variables selected by the three different modeling approaches: logistic regression with stepwise selection, Lasso regression, and best subset selection. This combined table allows for easy comparison of the variables who are considered the most predictive across these methods and their respective coefficients.
+Table 4 compares the coefficients of variables selected by the three different modeling approaches and their corresponding Odds Ratios: logistic regression with stepwise selection, Lasso regression, and best subset selection. This combined table allows for easy comparison of the variables who are considered the most predictive across these methods and their respective coefficients.
 
-We can observe that except BA1 and Var1 (obviously - we forced them) there are no other common variables between all three model selection methods. However, there are two common variables between Lasso and Stepwise Regression (ftcd_score, NMR). \########### den ecw tipota allo koino####moderators den ecw katholou
+We can observe that except BA1 and Var1 (obviously - we forced them) there are no other common variables between all three model selection methods. However, there are two common variables between Lasso and Stepwise Regression (ftcd_score, NMR). ########## den ecw tipota allo koino####moderators den ecw katholou ######### episis na pw gia odds ratio
 
 ```{r}
 # Create a table with coefficients from Logistic, Lasso, Best Subset Selection
@@ -652,7 +679,7 @@ best_subset_df <- data.frame(
 # Merge all into one table based on variable names
 combined_df <- full_join(lasso_df, stepwise_df, by = "variable") %>%
   full_join(best_subset_df, by = "variable") %>%
-  mutate(across(where(is.numeric), ~ round(.x, 6)))
+  mutate(across(where(is.numeric), ~ round(.x, 4)))
 
 # Remove the intercept row
 combined_df <- combined_df[combined_df$variable != "(Intercept)", ]
@@ -664,14 +691,58 @@ colnames(combined_df) <- gsub("Best.Subset", "Best Subset", colnames(combined_df
 
 # Change "variable" to "Variables" in the combined_df
 colnames(combined_df)[colnames(combined_df) == "variable"] <- "Variables"
-
-# Display the final combined table
-kable(combined_df, row.names = FALSE,
-      caption = "Summary of Coefficients across 3 Selection Methods (for Moderators)")
-
 ```
 
-The plots below provide a comprehensive comparison of three model selection methods — Lasso, Stepwise, and Best Subset — in predicting smoking abstinence. 
+
+```{r}
+# Create a table with ORs from Logistic, Lasso, and Best Subset Selection
+
+# Logistic coefficients (converted to OR)
+stepwise_or <- exp(stepwise_coefs)  # Convert coefficients to Odds Ratios
+stepwise_df <- data.frame(
+  variable = names(stepwise_or),
+  `Stepwise OR` = as.numeric(stepwise_or)
+)
+
+# Lasso coefficients (converted to OR)
+lasso_or_df <- result_table_lasso %>%
+  mutate(`Lasso OR` = exp(Coefficient)) %>%  # Convert coefficients to Odds Ratios
+  dplyr::select(variable, `Lasso OR`)
+
+# Best subset coefficients (converted to OR)
+best_subset_or <- exp(best_subset_coefs)  # Convert coefficients to Odds Ratios
+best_subset_df <- data.frame(
+  variable = names(best_subset_or),
+  `Best Subset OR` = as.numeric(best_subset_or)
+)
+
+# Merge all into one table based on variable names
+combined_or_df <- full_join(lasso_or_df, stepwise_df, by = "variable") %>%
+  full_join(best_subset_df, by = "variable") %>%
+  mutate(across(where(is.numeric), ~ round(.x, 4)))
+
+# Remove the intercept row
+combined_or_df <- combined_or_df[combined_or_df$variable != "(Intercept)", ]
+
+# Replace NA values with an empty space
+combined_or_df[is.na(combined_or_df)] <- " "
+
+# Rename columns
+colnames(combined_or_df) <- gsub("Best.Subset", "Best Subset", colnames(combined_or_df))
+colnames(combined_or_df)[colnames(combined_or_df) == "variable"] <- "Variables"
+```
+
+```{r}
+# Combined table for both coef and ORs
+full_df = left_join(combined_df, combined_or_df, by = "Variables") 
+
+kable(full_df, row.names = FALSE, 
+      col.names = c("Variables","Lasso", "Stepwise", "Best Subset", 
+                     "Lasso OR", "Stepwise OR", "Best Subset OR"),
+        caption = "Summary of Coefficients and Odds Ratios across 3 Selection Methods (for Moderators)") 
+```
+
+
 
 ### Calibration Plots (Left Panel)
 
@@ -698,6 +769,7 @@ The plots below provide a comprehensive comparison of three model selection meth
 
 **Best Subset Model** The Best Subset model has an AUC of 0.71, the lowest among the three models. This suggests that it has the weakest discrimination capability, potentially leading to more misclassification of abstinence status.
 
+The plots below provide a comprehensive comparison of three model selection methods — Lasso, Stepwise, and Best Subset — in predicting smoking abstinence. 
 ```{r}
 # Roc/Auc
 predicted_prob_lasso <- predict(lasso_model,
@@ -722,7 +794,7 @@ auc_value <- auc(roc_obj)
 
 # Plot ROC curve with ggplot2
 ROC_lasso = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
-  geom_line(color = "purple", size = 1) +
+  geom_line(color = "forestgreen", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
   annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", 
   round(auc_value, 2)), 
@@ -779,7 +851,7 @@ calib_data <- calib_data %>%
 
 calib_loess_lasso = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
-  geom_line(aes(y = loess_pred), color = "purple", linetype = "dashed") +  
+  geom_line(aes(y = loess_pred), color = "forestgreen", linetype = "dashed") +  
   geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), 
               alpha = 0.2, fill = "grey") +
   geom_abline(intercept = 0, slope = 1, color = "red") + # Perfect calibration line
@@ -813,7 +885,7 @@ auc_value <- auc(roc_obj)
 
 # Plot ROC curve with ggplot2
 ROC_step = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
-  geom_line(color = "purple", size = 1) +
+  geom_line(color = "forestgreen", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
   annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", 
                                                    round(auc_value, 2)), 
@@ -869,7 +941,7 @@ calib_data <- calib_data %>%
 
 calib_loess_step = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
-  geom_line(aes(y = loess_pred), color = "purple", linetype = "dashed") +  
+  geom_line(aes(y = loess_pred), color = "forestgreen", linetype = "dashed") +  
   geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), 
               alpha = 0.2,
               fill = "grey") +
@@ -917,7 +989,7 @@ auc_value <- auc(roc_obj)
 
 # Plot ROC curve with ggplot2
 ROC_best_subset = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
-  geom_line(color = "purple", size = 1) +
+  geom_line(color = "forestgreen", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
   annotate("text", x = 0.8, y = 0.2,
            label = paste("AUC =", round(auc_value, 2)), size = 5, color = "Black") +
@@ -973,7 +1045,7 @@ calib_data <- calib_data %>%
 
 calib_loess_bss = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
-  geom_line(aes(y = loess_pred), color = "purple", linetype = "dashed") +  
+  geom_line(aes(y = loess_pred), color = "forestgreen", linetype = "dashed") +  
   geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), alpha = 0.2, fill = "grey") +
   geom_abline(intercept = 0, slope = 1, color = "red") +  # Perfect calibration line
   labs(x = "Predicted Probability of Smoking Abstinence",
@@ -1164,12 +1236,53 @@ colnames(combined_df) <- gsub("Best.Subset", "Best Subset", colnames(combined_df
 
 # Change "variable" to "Variables" in the combined_df
 colnames(combined_df)[colnames(combined_df) == "variable"] <- "Variables"
-
-
-# Display the final combined table
-kable(combined_df, row.names = F,
-      caption = "Summary of Coefficients across 3 Selection Methods (for Predictors)")
 ```
+
+```{r}
+# Create a table with OR from the three methods
+# Convert Stepwise coefficients to Odds Ratios
+stepwise_coefs <- coef(predictor_logistic_model)
+stepwise_or <- exp(stepwise_coefs)
+stepwise_df <- data.frame(
+  Variables = names(stepwise_or),
+  `Stepwise OR` = as.numeric(stepwise_or)
+)
+
+# Convert Lasso coefficients to Odds Ratios
+lasso_or_df <- pred_result_table_lasso %>%
+  mutate(`Lasso OR` = exp(Coefficient)) %>%
+  rename(Variables = variable)  %>%
+  dplyr::select(Variables, `Lasso OR`)
+
+# Convert Best subset coefficients to Odds Ratios
+best_subset_or <- exp(pred_best_subset_coefs)
+best_subset_df <- data.frame(
+  Variables = names(best_subset_or),
+  `Best Subset OR` = as.numeric(best_subset_or)
+)
+
+# Merge all into one table based on variable names
+combined_or_df <- full_join(lasso_or_df, stepwise_df, by = "Variables") %>%
+  full_join(best_subset_df, by = "Variables") %>%
+  mutate(across(where(is.numeric), ~ round(.x, 4)))
+
+# Remove the intercept row
+combined_or_df <- combined_or_df[combined_or_df$Variables != "(Intercept)", ]
+
+# Replace NA values with an empty space
+combined_or_df[is.na(combined_or_df)] <- " "
+```
+
+```{r}
+# Combined table for both coef and ORs
+full_df = left_join(combined_df, combined_or_df, by = "Variables")
+kable(full_df, row.names = FALSE, 
+      col.names = c("Variables","Lasso", "Stepwise", "Best Subset",
+                     "Lasso OR", "Stepwise OR", "Best Subset OR"),
+        caption = "Summary of Coefficients and Odds Ratios across 3 Selection Methods (for Predictors)") 
+
+```
+
 
 # Results
 
