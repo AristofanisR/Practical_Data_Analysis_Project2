@@ -11,13 +11,12 @@ output:
   pdf_document: 
     latex_engine: xelatex
     keep_tex: true
-    number_sections: true
 
 link-citations: yes
 abstract: |
   **Purpose**: This project evaluates the efficacy of smoking cessation treatments among adults with Major Depressive Disorder (MDD), focusing on identifying baseline factors that moderate and predict treatment success. This analysis aims to clarify the role of both behavioral and pharmacological interventions, examining interactions between participant characteristics and treatment components.
 
-  **Methods**: Using data from a randomized, placebo-controlled trial, we assessed the effectiveness of Behavioral Activation (BA) and standard treatment (ST), each paired with either varenicline or a placebo, in supporting smoking cessation. Three statistical approaches—Lasso regression, stepwise logistic regression, and best subset selection—were employed to identify significant moderators and predictors of abstinence at the end of treatment, based on a sample of 300 adult smokers with current or past MDD.
+  **Methods**: Using data from a randomized, placebo-controlled trial, we assessed the effectiveness of Behavioral Activation (BA) and standard treatment (ST), each paired with either varenicline or a placebo, in supporting smoking cessation. Three statistical approaches-- Lasso regression, stepwise logistic regression, and best subset selection-- were employed to identify significant moderators and predictors of abstinence at the end of treatment, based on a sample of 300 adult smokers with current or past MDD.
     
   **Results**: The findings indicate that specific baseline characteristics, including FTCD score (a measure of nicotine dependence) and Nicotine Metabolism Ratio (NMR), significantly influence treatment outcomes. FTCD score was associated with lower abstinence rates, while a higher NMR was linked to greater likelihood of cessation. These predictors were consistently identified across models, suggesting a robust relationship between these factors and smoking cessation outcomes.
 
@@ -69,8 +68,6 @@ library(cowplot)
 ```
 
 # Data Overview
-
-The dataset for this project originates from a randomized control trial which explored the effect of pharmatherapy (Var) and behavioral activation on smoking cessation. The dataset consists of 300 adults with Major Depressive Disorder (MDD) and cigarette dependence. 
 
 As shown in Table 1 below, participant characteristics were stratified by four treatment combination-- behavioral activation with placebo (BASC+placebo), standard treatment with placebo (ST+placebo), behavioral activation with varenicline (BASC+varenicline), and standard treatment with varenicline (ST+varenicline)-- and summarized by treatment group in three primary areas: demographics, smoking characteristics, and psychiatric characteristics. 
 
@@ -322,7 +319,7 @@ library(knitr)
 missing_summary %>%
   arrange(desc(Pct)) %>%
   mutate(Pct = sprintf("%.2f%%", Pct)) %>%
-  kable(col.names = c("Variable", "Number", "Pct"), caption = "Table 1: Summary 
+  kable(col.names = c("Variable", "Number", "Pct"), caption = "Summary 
         of Missing Values")
 ```
 
@@ -382,19 +379,32 @@ kable(table_race_menthol,
 
 Additionally, we examine the relationships between education, income, race, and FTCD scores through mosaic and raincloud plots.
 
-**Mosaic Plot between Education and Income** This plot shows the distribution of education levels (edu_merged) across different income categories. We observe a gradient where higher education levels (coded in pink) tend to be associated with higher income levels, while lower education levels (in blue) were more concentrated in lower income brackets. This suggests a positive association between education and income.
 
-**Mosaic Plot between Education and Race** This plot reveals the distribution of education levels across different racial groups. The distribution varies, with Non-Hispanic Whites showing a relatively higher proportion in the higher education categories, while other groups, such as Black and Hispanic, have a more balanced spread across the education levels. This pattern may indicate disparities in educational attainment across racial groups.
-
-**Raincloud Plot for FTCD Score by Race** The raincloud plot shows the distribution and density of FTCD scores across racial groups. Non-Hispanic Whites have the highest density around higher FTCD scores, while other groups show a more varied distribution, with Hispanics and Black participants displaying lower scores overall. This visualization highlights potential differences in FTCD scores among racial groups, which may correlate with other socioeconomic factors.
-
-```{r,fig.width = 8, fig.height = 4, out.width = "80%", fig.align = "center"}
+```{r,fig.width = 10, fig.height = 4, out.width = "80%", fig.align = "center"}
 # Mosaic between education, income
 # mosaic = vcd::mosaic(~ inc + edu_merged, data = data_mice, shade = TRUE, 
 #                      legend = TRUE, labeling = labeling_values) 
 
+data_viz = data_mice %>%
+  mutate(
+    edu_merged = recode(factor(edu_merged),
+                        `1` = "<= High school",
+                        `2` = "Some college",
+                        `3` = "College graduate"),
+    inc = recode(factor(inc),
+                 `1` = "Less than $20,000",
+                 `2` = "$20,000–$35,000",
+                 `3` = "$35,001–$50,000",
+                 `4` = "$50,001–$75,000",
+                 `5` = "More than $75,000"),
+    race = factor(race, levels = c("Non-Hispanic White",
+                                   "Black",
+                                   "Hispanic",
+                                   "Other"))
+    )
+
 # Heatmap between education, income
-heatmap1 = ggplot(data = data_mice) +
+heatmap1 = ggplot(data = data_viz) +
   geom_mosaic(aes(weight = 1, x = product(inc), fill = edu_merged)) +
   labs(
     title = "           Mosaic Plot between Education and Income",
@@ -405,12 +415,12 @@ heatmap1 = ggplot(data = data_mice) +
   theme_minimal() +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.text.y = element_text(angle = 0, hjust = 1),
+    axis.text.y = element_text(angle = 45, hjust = 1),
     plot.title = element_text(hjust = 0.5)
   )
 
 # Heatmap between race, education
-heatmap2 = ggplot(data = data_mice) +
+heatmap2 = ggplot(data = data_viz) +
   geom_mosaic(aes(weight = 1, x = product(race), fill = edu_merged)) +
   labs(
     title = "Mosaic Plot between Education and Race",
@@ -421,7 +431,7 @@ heatmap2 = ggplot(data = data_mice) +
   theme_minimal() +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
-    axis.text.y = element_text(angle = 0, hjust = 1),
+    axis.text.y = element_text(angle = 45, hjust = 1),
     plot.title = element_text(hjust = 0.5)
   )
 
@@ -461,6 +471,12 @@ combined_plot
 raincloud
 ```
 
+**Mosaic Plot between Education and Income** This plot shows the distribution of education levels (edu_merged) across different income categories. We observe a gradient where higher education levels (coded in pink) tend to be associated with higher income levels, while lower education levels (in blue) were more concentrated in lower income brackets. This suggests a positive association between education and income.
+
+**Mosaic Plot between Education and Race** This plot reveals the distribution of education levels across different racial groups. The distribution varies, with Non-Hispanic Whites showing a relatively higher proportion in the higher education categories, while other groups, such as Black and Hispanic, have a more balanced spread across the education levels. This pattern may indicate disparities in educational attainment across racial groups.
+
+**Raincloud Plot for FTCD Score by Race** The raincloud plot shows the distribution and density of FTCD scores across racial groups. Non-Hispanic Whites have the highest density around higher FTCD scores, while other groups show a more varied distribution, with Hispanics and Black participants displaying lower scores overall. This visualization highlights potential differences in FTCD scores among racial groups, which may correlate with other socioeconomic factors.
+
 
 # Methods
 
@@ -476,9 +492,9 @@ In this part of the analysis, we implemented a Lasso regression to identify pote
 
 The training set was used to build the Lasso model, optimizing the selection of variables and interactions by identifying the subset that most effectively predicts smoking abstinence. Cross-validation on the training data determined the best penalty parameter (lambda), balancing the trade-off between model complexity and predictive accuracy.
 
-After training the model, we will evaluate it on the test set, providing an unbiased assessment of how well the selected variables and interactions generalize to new data. This approach ensures that the model is robust and capable of making reliable predictions beyond the original dataset.
+After training the model, we evaluated it on the test set, providing an unbiased assessment of how well the selected variables and interactions generalize to new data. This approach ensures that the model is robust and capable of making reliable predictions beyond the original dataset.
 
-The final model coefficients at the optimal lambda include only those variables and interactions with non-zero coefficients, which are presented in the resulting table (Table 4). This selection helps identify significant moderators of smoking abstinence while maintaining a simpler model.
+The final model coefficients at the optimal lambda include only those variables and interactions with non-zero coefficients, which are presented in the resulting tables (Table 4 and Table 5). This selection helps identify significant moderators of smoking abstinence while maintaining a simpler model.
 
 ```{r}
 # Modeling Preprocessing
@@ -584,19 +600,19 @@ penalty_factors[c(var1_col, ba1_col)] <- 0
 names(penalty_factors) <- colnames(train_variables_dummy_include)
 
 set.seed(58)
-lasso_model <- cv.glmnet(as.matrix(train_variables_dummy_include), train_outcome,
+Lasso_model <- cv.glmnet(as.matrix(train_variables_dummy_include), train_outcome,
                          penalty.factor = penalty_factors,
                          alpha = 1, family = "binomial")
 
 # Extract coefficients at the optimal lambda (best_lambda)
-best_lambda_lasso <- lasso_model$lambda.min
+best_lambda_Lasso <- Lasso_model$lambda.min
 #remove intercept
-optimal_coefs_lasso <- as.numeric(coef(lasso_model, s = best_lambda_lasso)[-1])
-coef_names_lasso <- rownames(coef(lasso_model, s = best_lambda_lasso))[-1]  
+optimal_coefs_Lasso <- as.numeric(coef(Lasso_model, s = best_lambda_Lasso)[-1])
+coef_names_Lasso <- rownames(coef(Lasso_model, s = best_lambda_Lasso))[-1]  
 
-result_table_lasso <- data.frame(
-  variable = coef_names_lasso,
-  Coefficient = optimal_coefs_lasso
+result_table_Lasso <- data.frame(
+  variable = coef_names_Lasso,
+  Coefficient = optimal_coefs_Lasso
 ) %>%
   filter(Coefficient != 0)
 
@@ -682,7 +698,7 @@ logistic_model <- step(
 
 ## Best Subset Selection
 
-Lastly, we performed best subset selection to identify the most predictive set of variables for smoking abstinence. For the first objective, we used sequential replacement (it was not possible to use every possible combination of variables - exhausted replacement - as the number of interactions could be over a million) to find the one that best explains the outcome with a balance between predictive power and model complexity.
+Lastly, we performed best subset selection to identify the most predictive set of variables for smoking abstinence. For the first objective, we used sequential replacement (it was not possible to use every possible combination of variables like we did in the second objective-- exhaustive replacement-- as the number of interactions could be over a million) to find the one that best explains the outcome with a balance between predictive power and model complexity.
 
 The selection process started with defining the outcome variable and predictor variables in the training dataset. Then we examined subsets of the predictors, looking for the best combination based on specific criteria. Here, Var1 and BA1 are forced into the model, meaning these terms will always be included in the subset selection process due to their importance as main effects. After that, we identified the subset with the minimum Mallows’ $Cp$ statistic, which is often used to select a model with good fit while avoiding overfitting.
 
@@ -725,7 +741,7 @@ stepwise_df <- data.frame(
 )
 
 # Lasso coefficients
-lasso_df <- result_table_lasso %>%
+Lasso_df <- result_table_Lasso %>%
   rename(`Lasso` = Coefficient)
 
 # Best subset coefficients
@@ -735,7 +751,7 @@ best_subset_df <- data.frame(
 )
 
 # Merge all into one table based on variable names
-combined_df <- full_join(lasso_df, stepwise_df, by = "variable") %>%
+combined_df <- full_join(Lasso_df, stepwise_df, by = "variable") %>%
   full_join(best_subset_df, by = "variable") %>%
   mutate(across(where(is.numeric), ~ round(.x, 4)))
 
@@ -763,7 +779,7 @@ stepwise_df <- data.frame(
 )
 
 # Lasso coefficients (converted to OR)
-lasso_or_df <- result_table_lasso %>%
+Lasso_or_df <- result_table_Lasso %>%
   mutate(`Lasso OR` = exp(Coefficient)) %>%  # Convert coefficients to Odds Ratios
   dplyr::select(variable, `Lasso OR`)
 
@@ -775,7 +791,7 @@ best_subset_df <- data.frame(
 )
 
 # Merge all into one table based on variable names
-combined_or_df <- full_join(lasso_or_df, stepwise_df, by = "variable") %>%
+combined_or_df <- full_join(Lasso_or_df, stepwise_df, by = "variable") %>%
   full_join(best_subset_df, by = "variable") %>%
   mutate(across(where(is.numeric), ~ round(.x, 4)))
 
@@ -798,10 +814,11 @@ kable(full_df, row.names = FALSE,
       col.names = c("Variables","Lasso", "Stepwise", "Best Subset", 
                      "Lasso OR", "Stepwise OR", "Best Subset OR"),
       caption = "Summary of Coefficients and Odds Ratios across 3 Sel
-ection Methods (for Moderators)") 
+ection Methods (for Moderators)") %>%
+  kable_styling(font_size = 8)
 ```
 
-
+The plots below provide a comprehensive comparison of three model selection methods — Lasso, Stepwise, and Best Subset — in predicting smoking abstinence.
 
 ### Calibration Plots (Left Panel)
 
@@ -828,19 +845,18 @@ ection Methods (for Moderators)")
 
 **Best Subset Model** The Best Subset model has an AUC of 0.71, the lowest among the three models. This suggests that it has the weakest discrimination capability, potentially leading to more misclassification of abstinence status.
 
-The plots below provide a comprehensive comparison of three model selection methods — Lasso, Stepwise, and Best Subset — in predicting smoking abstinence. 
 ```{r}
 # Roc/Auc
-predicted_prob_lasso <- predict(lasso_model,
+predicted_prob_Lasso <- predict(Lasso_model,
                                 newx = as.matrix(test_variables_dummy_include),
                                 s = "lambda.min", type = "response")
 
 # Convert predictions to numeric if needed (glmnet returns a matrix)
-predicted_prob_lasso <- as.numeric(predicted_prob_lasso)
+predicted_prob_Lasso <- as.numeric(predicted_prob_Lasso)
 
 # Plot ROC and calculate AUC
 # Generate ROC object
-roc_obj <- roc(test_outcome, predicted_prob_lasso)
+roc_obj <- roc(test_outcome, predicted_prob_Lasso)
 
 # Convert the ROC object to a data frame for ggplot2
 roc_data <- data.frame(
@@ -852,7 +868,7 @@ roc_data <- data.frame(
 auc_value <- auc(roc_obj)
 
 # Plot ROC curve with ggplot2
-ROC_lasso = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
+ROC_Lasso = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
   geom_line(color = "slateblue3", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
   annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", 
@@ -872,9 +888,9 @@ ROC_lasso = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
 num_cuts <- 10  # Number of bins for calibration
 
 calib_data <- data.frame(
-  prob = predicted_prob_lasso,  # predicted probabilities
+  prob = predicted_prob_Lasso,  # predicted probabilities
   # binning into `num_cuts` groups
-  bin = cut(predicted_prob_lasso, breaks = num_cuts),  
+  bin = cut(predicted_prob_Lasso, breaks = num_cuts),  
   # observed values (abst outcome in test data)
   class = as.numeric(test_outcome)-1  
 )
@@ -892,7 +908,7 @@ loess_fit <- loess(observed ~ predicted, data = calib_data, span = 0.75)
 calib_data$loess_pred <- predict(loess_fit, calib_data$predicted)
 
 # Plot Calibration Curve with Error Bars
-calib_error_bar_lasso = ggplot(calib_data) +
+calib_error_bar_Lasso = ggplot(calib_data) +
   geom_abline(intercept = 0, slope = 1, color = "red") +
   geom_errorbar(aes(x = predicted, ymin = observed - 1.96 * se,
                     ymax = observed + 1.96 * se),
@@ -908,7 +924,7 @@ calib_data <- calib_data %>%
   mutate(loess_ci_lower = loess_pred - 1.96 * sd(loess_pred),
          loess_ci_upper = loess_pred + 1.96 * sd(loess_pred))
 
-calib_loess_lasso = ggplot(calib_data, aes(x = predicted, y = observed)) +
+calib_loess_Lasso = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
   geom_line(aes(y = loess_pred), color = "slateblue3", linetype = "dashed") +  
   geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), 
@@ -1114,38 +1130,38 @@ calib_loess_bss = ggplot(calib_data, aes(x = predicted, y = observed)) +
 
 ```
 
-```{r, fig.width = 12, fig.height =12}
+```{r, fig.width = 12, fig.height =12, out.width = "80%", fig.align = "center"}
 # Create the 3x3 plot "matrix"
 plots_step = arrangeGrob(
   calib_error_bar_step, calib_loess_step, ROC_step,
   ncol = 3,
   left = textGrob("Stepwise Selection", rot = 90,
-                 gp = gpar(fontface = "bold", fontsize = 16)
+                 gp = gpar(fontface = "bold", fontsize = 18)
 ))
 
-plots_lasso = arrangeGrob(
-  calib_error_bar_lasso, calib_loess_lasso, ROC_lasso,
+plots_Lasso = arrangeGrob(
+  calib_error_bar_Lasso, calib_loess_Lasso, ROC_Lasso,
   ncol = 3,
   left = textGrob("Lasso Regression", rot = 90,
-                 gp = gpar(fontface = "bold", fontsize = 16)
+                 gp = gpar(fontface = "bold", fontsize = 18)
 ))
 
 plots_bss = arrangeGrob(
   calib_error_bar_bss, calib_loess_bss, ROC_best_subset,
   ncol = 3,
   left = textGrob("Best Subset Selection", rot = 90,
-                 gp = gpar(fontface = "bold", fontsize = 16)
+                 gp = gpar(fontface = "bold", fontsize = 18)
 ))
 
 # Bold the main title
 main_title <- textGrob(
   "Calibration Plots with Error Bars and LOESS - ROC Curves (for the 3 Selection Models)",
-  gp = gpar(fontface = "bold", fontsize = 18)
+  gp = gpar(fontface = "bold", fontsize = 20)
 )
 
 # Arrange everything with the bold title
 grid.arrange(
-  plots_lasso,
+  plots_Lasso,
   plots_step,
   plots_bss,
   nrow = 3,
@@ -1153,7 +1169,7 @@ grid.arrange(
 )
 ```
 
-Overall, we followed similar analysis procedure as in objective one, but due to lower model complexity, we could employ exhaustive replacement in best subset selection. Table 5 compares the coefficients of variables selected by the three different modeling approaches and their corresponding ORs. On this approach, we observed that three variables (ftcd_score, mde_curr and NMR) were present in all three models. As previously discussed, FTCD score and NMR could be potentional predictors for predicting the outcome.  Also, the OR of mde_curr is less than 1 in all three methods, meaning mde_curr has a similar behavior with ftcd_score. This means that participants with current MDD would have a lower success rate of smoking abstinence than those with past MDD. Finally, Var has a consistently >1 OR in all three methods used, while BA did not show a positive impact on abstinence, which is consistent with the findings from the original study (@hitsman2023efficacy).
+For the second objective, we explored baseline characteristic as potential predictors. Overall, we followed similar analysis procedure as in objective one, but due to lower model complexity, we could employ exhaustive replacement in best subset selection. Table 5 compares the coefficients of variables selected by the three different modeling approaches and their corresponding ORs. On this approach, we observed that three variables (ftcd_score, mde_curr and NMR) were present in all three models. As previously discussed, FTCD score and NMR could be potentional predictors for predicting the outcome.  Also, the OR of mde_curr is less than 1 in all three methods, meaning mde_curr has a similar behavior with ftcd_score. This means that participants with current MDD would have a lower success rate of smoking abstinence than those with past MDD. Finally, Var has a consistently >1 OR in all three methods used, while BA did not show a positive impact on abstinence, which is consistent with the findings from the original study (@hitsman2023efficacy).
 
 ```{r}
 ### Second objective - Predictors
@@ -1203,19 +1219,19 @@ penalty_factors[c(var1_col, ba1_col)] <- 0
 names(penalty_factors) <- colnames(train_predictors_dummy_include)
 
 set.seed(58)
-lasso_model <- cv.glmnet(as.matrix(train_predictors_dummy_include), train_outcome,
+Lasso_model <- cv.glmnet(as.matrix(train_predictors_dummy_include), train_outcome,
                          penalty.factor = penalty_factors,
                          alpha = 1, family = "binomial")
 
 # Extract coefficients at the optimal lambda (best_lambda)
-best_lambda_lasso <- lasso_model$lambda.min
+best_lambda_Lasso <- Lasso_model$lambda.min
 #remove intercept
-optimal_coefs_lasso <- as.numeric(coef(lasso_model, s = best_lambda_lasso)[-1])
-coef_names_lasso <- rownames(coef(lasso_model, s = best_lambda_lasso))[-1]  
+optimal_coefs_Lasso <- as.numeric(coef(Lasso_model, s = best_lambda_Lasso)[-1])
+coef_names_Lasso <- rownames(coef(Lasso_model, s = best_lambda_Lasso))[-1]  
 
-pred_result_table_lasso <- data.frame(
-  variable = coef_names_lasso,
-  Coefficient = optimal_coefs_lasso
+pred_result_table_Lasso <- data.frame(
+  variable = coef_names_Lasso,
+  Coefficient = optimal_coefs_Lasso
 ) %>%
   filter(Coefficient != 0)
 ```
@@ -1273,7 +1289,7 @@ stepwise_df <- data.frame(
 )
 
 # Lasso coefficients
-lasso_df <- pred_result_table_lasso %>%
+Lasso_df <- pred_result_table_Lasso %>%
   rename(`Lasso` = Coefficient)
 
 # Best subset coefficients
@@ -1283,7 +1299,7 @@ best_subset_df <- data.frame(
 )
 
 # Merge all into one table based on variable names
-combined_df <- full_join(lasso_df, stepwise_df, by = "variable") %>%
+combined_df <- full_join(Lasso_df, stepwise_df, by = "variable") %>%
   full_join(best_subset_df, by = "variable") %>%
   mutate(across(where(is.numeric), ~ round(.x, 4)))
 
@@ -1310,7 +1326,7 @@ stepwise_df <- data.frame(
 )
 
 # Convert Lasso coefficients to Odds Ratios
-lasso_or_df <- pred_result_table_lasso %>%
+Lasso_or_df <- pred_result_table_Lasso %>%
   mutate(`Lasso OR` = exp(Coefficient)) %>%
   rename(Variables = variable)  %>%
   dplyr::select(Variables, `Lasso OR`)
@@ -1323,7 +1339,7 @@ best_subset_df <- data.frame(
 )
 
 # Merge all into one table based on variable names
-combined_or_df <- full_join(lasso_or_df, stepwise_df, by = "Variables") %>%
+combined_or_df <- full_join(Lasso_or_df, stepwise_df, by = "Variables") %>%
   full_join(best_subset_df, by = "Variables") %>%
   mutate(across(where(is.numeric), ~ round(.x, 4)))
 
