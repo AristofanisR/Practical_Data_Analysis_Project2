@@ -65,6 +65,8 @@ library(mice)
 library(leaps)
 library(ggplot2)
 library(ggmosaic)
+library(ggbeeswarm)
+library(ggdist)
 ```
 
 # Data Processing
@@ -385,22 +387,46 @@ kable(table_race_menthol,
 ```
 
 ```{r}
-# Mosaic between edu, income
-mosaic(~ inc + edu_merged, data = data_mice, 
-       shade = TRUE,           # Apply shading based on chi-squared statistic
-       legend = TRUE,         # Show a legend
-       labeling = labeling_values,   # Show frequencies on tiles
-       gp = gpar(fontsize = 12))  # Adjust the size of text labels
+# Mosaic between education, income
+vcd::mosaic(~ inc + edu_merged, data = data_mice, shade = TRUE, legend = TRUE, labeling = labeling_values) 
 
 
-# Plot between readiness, NMR
+# Heatmap between race, education
+ggplot(data = data_mice) +
+  geom_mosaic(aes(weight = 1, x = product(race), fill = edu_merged)) +
+  labs(
+    title = "Mosaic Plot between Education and Income",
+    x = "Income",
+    y = "Education"
+  ) +
+  scale_fill_manual(values = c("slateblue3", "grey", "palevioletred")) + 
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(angle = 0, hjust = 1),
+    plot.title = element_text(hjust = 0.5)
+  )
+
+# Beeswarm plot between Sex, NMR
+ggplot(data_mice, aes(x = sex_ps, y = NMR, color = sex_ps)) +
+  geom_beeswarm(size = 2, alpha = 0.7) +
+  labs(x = "Sex", y = "NMR", title = "Beeswarm Plot") +
+  theme_minimal() +
+  theme(legend.position = "none") +
+  scale_fill_manual(values = c("slateblue3", "palevioletred"))
 
 
-# Mosaic between edu, income
 
+# Raincloud plot between edu, income
+ggplot(data_mice, aes(x = race, y = ftcd_score, fill = race)) +
+  ggdist::stat_halfeye(adjust = 0.5, width = 0.6, .width = 0, justification = -0.2, point_colour = NA) +
+  geom_boxplot(width = 0.1, outlier.shape = NA, alpha = 0.5) +
+  geom_jitter(width = 0.1, alpha = 0.4) +
+  coord_flip() +  # Flip coordinates for a horizontal layout
+  labs(x = "Race", y = "FTCD Score", title = "Raincloud Plot") +
+  theme_minimal() +
+  scale_fill_manual(values = c("mediumblue","slateblue3", "grey", "palevioletred"))
 
-
-# Mosaic between edu, income
 
 
 
@@ -794,7 +820,7 @@ auc_value <- auc(roc_obj)
 
 # Plot ROC curve with ggplot2
 ROC_lasso = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
-  geom_line(color = "forestgreen", size = 1) +
+  geom_line(color = "mediumpurple2", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
   annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", 
   round(auc_value, 2)), 
@@ -851,7 +877,7 @@ calib_data <- calib_data %>%
 
 calib_loess_lasso = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
-  geom_line(aes(y = loess_pred), color = "forestgreen", linetype = "dashed") +  
+  geom_line(aes(y = loess_pred), color = "mediumpurple2", linetype = "dashed") +  
   geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), 
               alpha = 0.2, fill = "grey") +
   geom_abline(intercept = 0, slope = 1, color = "red") + # Perfect calibration line
@@ -885,7 +911,7 @@ auc_value <- auc(roc_obj)
 
 # Plot ROC curve with ggplot2
 ROC_step = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
-  geom_line(color = "forestgreen", size = 1) +
+  geom_line(color = "mediumpurple2", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
   annotate("text", x = 0.8, y = 0.2, label = paste("AUC =", 
                                                    round(auc_value, 2)), 
@@ -941,7 +967,7 @@ calib_data <- calib_data %>%
 
 calib_loess_step = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
-  geom_line(aes(y = loess_pred), color = "forestgreen", linetype = "dashed") +  
+  geom_line(aes(y = loess_pred), color = "mediumpurple2", linetype = "dashed") +  
   geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), 
               alpha = 0.2,
               fill = "grey") +
@@ -989,7 +1015,7 @@ auc_value <- auc(roc_obj)
 
 # Plot ROC curve with ggplot2
 ROC_best_subset = ggplot(roc_data, aes(x = 1-Specificity, y = Sensitivity)) +
-  geom_line(color = "forestgreen", size = 1) +
+  geom_line(color = "mediumpurple2", size = 1) +
   geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "grey") +
   annotate("text", x = 0.8, y = 0.2,
            label = paste("AUC =", round(auc_value, 2)), size = 5, color = "Black") +
@@ -1045,7 +1071,7 @@ calib_data <- calib_data %>%
 
 calib_loess_bss = ggplot(calib_data, aes(x = predicted, y = observed)) +
   # Flexible calibration (Loess)
-  geom_line(aes(y = loess_pred), color = "forestgreen", linetype = "dashed") +  
+  geom_line(aes(y = loess_pred), color = "mediumpurple2", linetype = "dashed") +  
   geom_ribbon(aes(ymin = loess_ci_lower, ymax = loess_ci_upper), alpha = 0.2, fill = "grey") +
   geom_abline(intercept = 0, slope = 1, color = "red") +  # Perfect calibration line
   labs(x = "Predicted Probability of Smoking Abstinence",
