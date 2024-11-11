@@ -16,7 +16,7 @@
 
 **`References.bib`**: The article bibliography for the report
 
-**`Practical_Data_Analysis_Project2_Aristofanis_Rontogiannis.pdf`**: The knitted report as .pdf
+**`project2_Rontogiannis_Rmarkdown.pdf`**: The knitted report as .pdf
 
 ## Dependancies
 
