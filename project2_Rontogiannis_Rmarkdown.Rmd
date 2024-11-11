@@ -1,6 +1,6 @@
 ---
 title: | 
- \textbf{TBD}
+ \textbf{Evaluating the Efficacy of Smoking Cessation Treatments in Adults with Major Depressive Disorder: A Comparative Analysis of Behavioral Interventions}
 
  \vspace{1cm} 
 subtitle: 
@@ -72,13 +72,9 @@ library(cowplot)
 
 # Data Processing
 
-The dataset for this project #############
+The dataset for this project originates from a randomized control trial which explored the effect of pharmatherapy (Var) and behavioral activation on smoking cessation. The dataset consists of 300 adults with Major Depressive Disorder (MDD) and cigarette dependence. 
 
-A race variable was created to represent participants’ racial or ethnic background. Based on three indicators—Non-Hispanic White (NHW), Black, and Hispanic—participants were categorized as "Non-Hispanic White," "Black," "Hispanic," or "Other". Additionally, a variable representing the treatment categories was generated to classify participants into four treatment groups: behavioral activation with placebo (BASC+placebo), standard treatment with placebo (ST+placebo), behavioral activation with varenicline (BASC+varenicline), and standard treatment with varenicline (ST+varenicline).
-
-To ensure consistency, categorical variables such as sex and education level were converted to factor types, while continuous variables remained numeric. This type adjustment was necessary to facilitate subsequent analysis and ensure that each variable was in the appropriate format.
-
-Participant characteristics were summarized by treatment group in three primary areas: demographics, smoking characteristics, and psychiatric characteristics.
+As shown in Table 1 below, participant characteristics were stratified by four treatment combination-- behavioral activation with placebo (BASC+placebo), standard treatment with placebo (ST+placebo), behavioral activation with varenicline (BASC+varenicline), and standard treatment with varenicline (ST+varenicline)-- and summarized by treatment group in three primary areas: demographics, smoking characteristics, and psychiatric characteristics. 
 
 In the demographics section, participant variables such as age, sex, race, income, and education level were included. Age was summarized as a continuous variable using mean and standard deviation, while categorical variables like sex, race, income, and education level were presented with counts and percentages for each treatment group. This section provides an overview of the baseline demographic distribution across the four treatment conditions.
 
@@ -86,7 +82,7 @@ Smoking-related characteristics were summarized to include baseline measures of 
 
 Psychiatric characteristics were also summarized to capture information related to mental health, such as anhedonia (measured by the SHAPS score), presence of other DSM-5 diagnoses, use of antidepressant medication, and current versus past MDD status. Continuous variables, like the SHAPS score, were summarized by mean and standard deviation, while categorical variables, like the presence of other DSM-5 diagnoses, were displayed with counts and percentages. This section highlights the psychiatric characteristics of participants across treatment groups.
 
-The three summary tables—demographics, smoking characteristics, and psychiatric characteristics—were combined into a final table (Table 1) that provides an overall snapshot of participant characteristics by treatment group and by overall sample. This table is organized to present a clear and comprehensive view of the data, allowing for straightforward comparisons across treatment groups and providing context for further analyses on treatment outcomes.
+With those three sections, Table 1 provides an overall snapshot of participant characteristics by treatment group and by overall sample. This table is organized to present a clear and comprehensive view of the data, allowing for straightforward comparisons across treatment groups and providing context for further analyses on treatment outcomes.
 
 ```{r}
 #Read main data set 
@@ -295,7 +291,7 @@ Additionally, to facilitate certain analyses, a new variable was created to cons
 
 ## Data Missingness and Imputation
 
-The missing data analysis involves examining the extent of missingness across variables in the dataset. A summary table was generated (Table 2), listing variables with missing values, the count of missing entries for each variable, and the corresponding percentage relative to the total sample size. For example, the variable with the highest missingness is the NMR (7%), followed by the variables crv_total_pq1 (6%) and readiness (5.67%). Variables with no missing values were excluded from this table for clarity. This missingness analysis is a critical step in data preparation, as it helps to address data quality issues and ensure that the dataset is ready for further statistical modeling and interpretation. The total percentage of missingness was around 20%. If we delete all the rows with missing data we might lose a significant portion of our dataset, which could reduce the statistical power of our analyses and lead to biased estimates.
+The missing data analysis involves examining the extent of missingness across variables in the dataset. A summary table was generated (Table 2), listing variables with missing values, the count of missing entries for each variable, and the corresponding percentage relative to the total sample size. For example, the variable with the highest missingness is the variable NMR (7%), followed by the variables crv_total_pq1 (6%) and readiness (5.67%). Variables with no missing values were excluded from this table for clarity. This missingness analysis is a critical step in data preparation, as it helps to address data quality issues and ensure that the dataset is ready for further statistical modeling and interpretation. The total percentage of missingness was around 20%. If we have deleted all the rows with missing data, we might have lost a significant portion of our dataset, which could reduce the statistical power of our analyses and lead to biased estimates.
 
 ```{r}
 #Missingness Table
@@ -463,7 +459,7 @@ combined_plot
 
 ```
 
-```{r,fig.width = 8, fig.height = 4, out.width = "80%", fig.align = "center"}
+```{r,fig.width = 7, fig.height = 4, out.width = "80%", fig.align = "center"}
 raincloud
 ```
 
@@ -716,7 +712,7 @@ best_subset_names = names(coef(best_subset_model, cp_min))
 
 Table 4 compares the coefficients of variables selected by the three different modeling approaches and their corresponding Odds Ratios: logistic regression with stepwise selection, Lasso regression, and best subset selection. This combined table allows for easy comparison of the variables who are considered the most predictive across these methods and their respective coefficients.
 
-We can observe that except BA1 and Var1 (obviously - we forced them) there are no other common variables between all three model selection methods. However, there are two common variables between Lasso and Stepwise Regression (ftcd_score, NMR). ########## den ecw tipota allo koino####moderators den ecw katholou ######### episis na pw gia odds ratio
+We can observe that except BA1 and Var1 (obviously - we forced them) there are no other common variables between all three model selection methods. However, there are two common variables between Lasso and Stepwise Regression (ftcd_score, NMR). FTSD score's OR is smaller than 1 in both Lasso and Stepwise Regression, meaning that participants with higher cigarette dependence would have lower success rate of smoking abstinence. On the opposite, the OR of NMR is greater than 1 in both methods, meaning that participants with higher nicotine metabolism ratio would have a higher possibility of quitting smoking. The opposite directionality between these two variables' impact on smoking cessation showcases the potential biological relation between baseline characteristic and the outcome. Except from that, every other variable is present to one method solely, indicating that the three methods used different selection criteria and thus lead to high variability in variables/interaction terms selected.
 
 ```{r}
 # Create a table with coefficients from Logistic, Lasso, Best Subset Selection
@@ -1156,6 +1152,8 @@ grid.arrange(
   top = main_title
 )
 ```
+
+For the second objective of this project, we considered baseline characteristics as potential predictors while keeping BA and Var controlled. Thus, for simplicity, no interaction terms were included in the full models. Overall, we followed similar analysis procedure as in objective one, but due to lower model complexity, we could employ exhaustive replacement in best subset selection. Table 5 compares the coefficients of variables selected by the three different modeling approaches and their corresponding ORs. On this approach, we observed that three variables (ftcd_score, mde_curr and NMR) were present in all three models. As previously discussed, FTCD score and NMR could be potentional predictors for predicting the outcome.
 
 ```{r}
 ### Second objective - Predictors
