@@ -26,7 +26,7 @@
 
 **Data Summary and Reporting**: `gtsummary`, `summarytools`, `knitr`, `kableExtra`, `gtsummary`, `gt`
 
-**Data Analysis and Evaluation**: `glmnet`, `leaps`, `pROC`, `MASS'
+**Data Analysis and Evaluation**: `glmnet`, `leaps`, `pROC`, `MASS`
 
 **Imputation and Missing Data Handling**: `MICE`
 
